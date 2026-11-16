@@ -65,7 +65,7 @@ export function ManualPaymentInstructions({
             pases se confirmarán cuando el promotor verifique el abono.
           </p>
           {payment.whatsAppUrl ? (
-            <a className="primary" href={payment.whatsAppUrl}>
+            <a className="primary" href={payment.whatsAppUrl} target="_blank" rel="noopener noreferrer">
               Abrir WhatsApp y enviar comprobante
             </a>
           ) : (
@@ -73,6 +73,7 @@ export function ManualPaymentInstructions({
               La sede aún no configuró su WhatsApp. Contacta al administrador.
             </p>
           )}
+          <p>Tu reserva permanece abierta aquí. Si WhatsApp no se abrió, usa el botón para abrirlo en otra pestaña.</p>
         </>
       ) : status === "Confirmed" ? (
         <p>

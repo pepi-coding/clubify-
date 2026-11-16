@@ -94,6 +94,13 @@ export function EventShop({ eventId }: { eventId: string }) {
             cat={cat}
             busy={busy || !cat.paymentsConfigured}
             reserve={async (quantity) => {
+              // Open during the click gesture, before the asynchronous reservation.
+              const whatsapp = cat.paymentMode === 'WhatsAppManual' ? window.open('about:blank', '_blank') : null;
+              if (whatsapp) {
+                whatsapp.opener = null;
+                whatsapp.document.title = 'Preparando WhatsApp…';
+                whatsapp.document.body.textContent = 'Creando tu reserva. WhatsApp se abrirá cuando el servidor la confirme.';
+              }
               setBusy(true);
               setError("");
               const body = {
@@ -107,8 +114,12 @@ export function EventShop({ eventId }: { eventId: string }) {
                     headers: key("reservation", body),
                   });
                   nav(`/orders/${r.data!.orderId}`);
-                  if (r.data!.payment.whatsAppUrl)
-                    window.location.assign(r.data!.payment.whatsAppUrl);
+                  if (whatsapp && !whatsapp.closed) {
+                    try {
+                      if (r.data!.payment.whatsAppUrl) whatsapp.location.replace(r.data!.payment.whatsAppUrl);
+                      else whatsapp.close();
+                    } catch { whatsapp.close(); }
+                  }
                   return;
                 }
                 const r = await apiClient.POST("/api/v1/holds", {
@@ -117,6 +128,7 @@ export function EventShop({ eventId }: { eventId: string }) {
                 });
                 nav(`/checkout/${r.data!.id}`);
               } catch (e) {
+                if (whatsapp && !whatsapp.closed) whatsapp.close();
                 setError((e as Error).message);
                 await q.refetch();
               } finally {

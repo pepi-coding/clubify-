@@ -14,6 +14,8 @@ Actualizado: 16/11/2026 (America/Lima).
 
 ## Mejora operativa — referencias cortas
 
+WhatsApp se abre en otra pestaña/ventana, manteniendo el pedido visible en la original. La apertura se prepara en el clic para evitar bloqueo por la espera de red; solo navega al confirmar la reserva y se cierra ante fallo. El botón de WhatsApp también abre aparte con noopener/noreferrer y sirve de fallback. Verificado el flujo y reapertura en escritorio/móvil, sin envío de mensajes.
+
 Reservas y pedidos usan una referencia visible de ocho caracteres agrupados XXXX-XXXX, sin 0/1/I/O. PostgreSQL genera códigos únicos entre conexiones/réplicas mediante secuencia no cíclica y permutación/base32, respaldado por índice único y check. Se persisten una sola vez; GUID internos, permisos, inventario y QR permanecen independientes.
 
 Migración `20261116165758_ShortReservationReferences` aplicada sobre la DB existente y bases de prueba. Asigna referencias a pedidos anteriores y actualiza representaciones idempotentes de WhatsApp/pedidos/pagos, sin duplicar efectos ni alterar IDs o beneficios. Mis pedidos, detalle, WhatsApp, cola del promotor y mensajes de venta/cortesía muestran el código. La búsqueda admite minúsculas y ausencia de guion; los GUID antiguos siguen permitidos en búsquedas para mensajes ya enviados.

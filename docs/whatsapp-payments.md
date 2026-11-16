@@ -8,7 +8,7 @@ Mejora del 16/11/2026: referencia visible corta y única (p. ej. K7M4-P9TX), con
 
 1. Seleccionar una oferta y pulsar Reservar.
 2. Una transacción crea hold de 60 minutos y pedido WhatsAppManual, con precio/composición calculados por servidor. No emite pases.
-3. El navegador abre WhatsApp con número de la sede, referencia del pedido, evento, importe y vencimiento en Lima. Se usa click-to-chat oficial (`wa.me`); el mensaje se prepara, no se envía automáticamente. La captura se adjunta y envía por el cliente dentro de WhatsApp.
+3. El navegador abre WhatsApp en otra pestaña/ventana con número de la sede, referencia del pedido, evento, importe y vencimiento en Lima. La pestaña original conserva el detalle de la reserva. Se prepara la ventana durante el clic y solo se dirige a WhatsApp cuando el servidor confirma; si falla la reserva, se cierra. Si el navegador bloquea la apertura, el botón del pedido permite abrirlo por separado. Los enlaces no permiten acceso a la ventana de origen. Se usa click-to-chat oficial (`wa.me`); el mensaje se prepara, no se envía automáticamente. La captura se adjunta y envía por el cliente dentro de WhatsApp.
 4. Cliente paga por Yape o Plin según las instrucciones del negocio y envía comprobante. En Mis pedidos ve el estado, plazo y botón para volver a WhatsApp.
 5. Promotor contrasta el comprobante con el abono real en su cuenta y registra la verificación. Solo entonces se confirma la reserva y aparecen los pases/vale.
 
