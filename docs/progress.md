@@ -12,6 +12,13 @@ Actualizado: 16/11/2026 (America/Lima).
 | F5 — Seguridad y barra | completada |
 | F6–F9 | pendiente |
 
+## Mejora operativa — referencias cortas
+
+Reservas y pedidos usan una referencia visible de ocho caracteres agrupados XXXX-XXXX, sin 0/1/I/O. PostgreSQL genera códigos únicos entre conexiones/réplicas mediante secuencia no cíclica y permutación/base32, respaldado por índice único y check. Se persisten una sola vez; GUID internos, permisos, inventario y QR permanecen independientes.
+
+Migración `20261116165758_ShortReservationReferences` aplicada sobre la DB existente y bases de prueba. Asigna referencias a pedidos anteriores y actualiza representaciones idempotentes de WhatsApp/pedidos/pagos, sin duplicar efectos ni alterar IDs o beneficios. Mis pedidos, detalle, WhatsApp, cola del promotor y mensajes de venta/cortesía muestran el código. La búsqueda admite minúsculas y ausencia de guion; los GUID antiguos siguen permitidos en búsquedas para mensajes ya enviados.
+
+Verificado: suite completa 40/40 y cuatro pruebas dirigidas, incluidas dos nuevas de unicidad concurrente (512 códigos), rechazo de duplicados DB y migración desde esquema anterior conservando QR/estado/replay. Build backend/frontend y Docker aprobados. Playwright 16/16 escritorio/móvil, incluyendo búsqueda del promotor sin guion y mensaje WhatsApp con código corto sin GUID. Reinicio preserva la referencia y el estado operativo. Documentación: [reservation-references.md](reservation-references.md).
 ## F5 — Ingreso y canje operativos
 
 Seguridad y barra disponen de paneles separados por rol y sede, selección de evento, cámara QR y alternativa de código pegado/escrito. Leer solo inspecciona; confirmar vuelve a validar permisos, estado y ventanas. Seguridad registra un único ingreso y muestra usados con fecha/hora. Barra exige un ingreso del pedido y entrega únicamente las líneas/cantidades elegidas. Whisky ×1/gaseosa ×2, tras entregar una gaseosa: whisky ×1/gaseosa ×1. No hay reingreso ni ocupación actual.

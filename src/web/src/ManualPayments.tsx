@@ -282,9 +282,9 @@ function PaymentQueue({
             .filter(
               (o) =>
                 (filter === "all" || o.status === "PendingPayment") &&
-                `${o.reference} ${o.customerEmail}`
-                  .toLowerCase()
-                  .includes(search.toLowerCase()),
+                (o.reference.replaceAll('-', '').toLowerCase().includes(search.replace(/[\s-]/g, '').toLowerCase()) ||
+                  o.customerEmail.toLowerCase().includes(search.trim().toLowerCase()) ||
+                  o.id.replaceAll('-', '').includes(search.replace(/[\s-]/g, '').toLowerCase())),
             )
             .map((o) => (
               <VerifyReservation

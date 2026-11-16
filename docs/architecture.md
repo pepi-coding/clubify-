@@ -4,6 +4,8 @@ Fecha: 14/11/2026. Alcance autorizado acumulado: F0–F4. Decisiones de inventar
 
 F5 añadida el 16/11/2026: admisiones de un uso, canje parcial posterior a ingreso, paneles separados Security/BarStaff, cámara con fallback manual, logs/auditoría e idempotencia con recuperación del propio operador. Bloqueos y relaciones compuestas sobre PostgreSQL; no se confirma una acción por leer QR ni por tener conectividad local. Detalles: [f5.md](f5.md).
 
+Referencias de reserva: Order.Reference se genera y persiste en PostgreSQL con secuencia no cíclica, permutación/base32 y unicidad global en esta DB. Formato XXXX-XXXX sin caracteres 0/1/I/O. No sustituye PK/FK GUID ni tokens QR y no concede autorización. Migración con backfill y actualización de respuestas idempotentes: [reservation-references.md](reservation-references.md).
+
 Cambio posterior del MVP: nuevas reservas por WhatsApp con una hora de vigencia y verificación humana de Yape/Plin por Promotor de sede. Reutiliza transacciones de inventario/emisión e introduce configuración de WhatsApp por sede, datos auditados de verificación y unicidad del código de operación. Ver [whatsapp-payments.md](whatsapp-payments.md), que sustituye las reglas anteriores del checkout online.
 
 ## Componentes

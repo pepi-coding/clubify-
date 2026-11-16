@@ -2030,6 +2030,7 @@ export interface components {
             totalCents: number;
             /** Format: date-time */
             expiresAt?: null | string;
+            reference?: null | string;
         };
         ConsumptionBalance: {
             /** Format: uuid */
@@ -2310,6 +2311,8 @@ export interface components {
             voucher: null | components["schemas"]["VoucherDto"];
             paymentStatuses: string[];
             payment?: null | components["schemas"]["ManualPaymentInfo"];
+            /** @default  */
+            reference: string;
         };
         OrderLineDto: {
             name: string;

@@ -291,7 +291,7 @@ export function MyOrders() {
             <Link className="card" key={o.id} to={`/orders/${o.id}`}>
               <h2>{states[o.status]}</h2>
               <p>{money(o.totalCents)}</p>
-              <small>{o.id}</small>
+              <small>Reserva {o.reference}</small>
             </Link>
           ))}
         </div>
@@ -328,6 +328,7 @@ export function OrderDetail() {
           : "DEMOSTRACIÓN · SIN COBRO REAL"}
       </p>
       <h1>{o.eventName}</h1>
+      <p>Reserva <strong className="reservation-reference">{o.reference}</strong></p>
       <h2>{states[o.status]}</h2>
       <p>
         {money(o.totalCents)} ·{" "}
@@ -730,7 +731,7 @@ function EventCommerceAdmin({
                   },
                 );
             setMessage(
-              `Pedido ${r.data!.id}: ${states[r.data!.status]}. El cliente puede verlo en Mis pedidos.`,
+              `Pedido ${r.data!.reference}: ${states[r.data!.status]}. El cliente puede verlo en Mis pedidos.`,
             );
           });
         }}

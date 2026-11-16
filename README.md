@@ -4,6 +4,8 @@ Implementación de F0–F5 de `contract.md`. React/TypeScript + ASP.NET Core Ide
 
 **Flujo actual del MVP:** reserva de **60 minutos** → apertura de **WhatsApp** → pago por **Yape/Plin** y captura enviada al negocio → verificación por **Promotor** → reserva confirmada y QR emitidos. Antes de recibir reservas, AdminA configura el número en Miraflores → **Reservas y pagos por WhatsApp → Configurar WhatsApp de pagos**. No se ha inventado un número de contacto. Reglas y pagos vencidos: [docs/whatsapp-payments.md](docs/whatsapp-payments.md).
 
+Las reservas muestran una referencia corta, por ejemplo **K7M4-P9TX**, en WhatsApp, Mis pedidos y el panel del promotor. Ocho caracteres sin 0/1/I/O, únicos y permanentes; los pedidos existentes también reciben código. El promotor puede buscar en minúsculas y sin guion. Los GUID quedan internos. Detalles: [docs/reservation-references.md](docs/reservation-references.md).
+
 ## Demo completa en Docker
 
 ```powershell
@@ -99,7 +101,7 @@ npx playwright install chromium
 npm test
 ```
 
-Los 16 escenarios combinan escritorio y móvil: identidad/mapas, WhatsApp/promotor, QR/vale, ofertas/cortesías y F5 (decoder real con video sintético, cámara denegada, fallback, offline y respuesta perdida tras commit). Los logins de prueba esperan el límite real de 20/minuto; la suite puede tardar más de un minuto. Las 38 pruebas backend PostgreSQL cubren F0–F5, con concurrencia, permisos, ventanas/revocación, idempotencia, saldos parciales, pago manual, comprobantes, aforo, snapshots y cifrado.
+Los 16 escenarios combinan escritorio y móvil: identidad/mapas, WhatsApp/promotor, QR/vale, ofertas/cortesías y F5 (decoder real con video sintético, cámara denegada, fallback, offline y respuesta perdida tras commit). Los logins de prueba esperan el límite real de 20/minuto; la suite puede tardar más de un minuto. Las 40 pruebas backend PostgreSQL cubren F0–F5, con concurrencia, permisos, ventanas/revocación, idempotencia, saldos parciales, pago manual, comprobantes, aforo, snapshots y cifrado.
 
 ## Migraciones y Docker
 

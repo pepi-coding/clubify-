@@ -18,8 +18,8 @@ public static class CommerceEndpoints
         buyer.MapPost("/holds", (HoldRequest r, HttpContext c, CommerceService s) => Run(() => s.Transaction(r.EventId, async e => { var h = await s.CreateHold(e, Actor(c), r.Lines); return new CommerceResult(h.Id, h.Status, h.TotalCents, h.ExpiresAt); }, Actor(c), "hold", Key(c), r))).Produces<CommerceResult>();
         buyer.MapGet("/me/holds/{id:guid}", (Guid id, HttpContext c, CommerceService s) => Run(() => s.HoldDetail(id, Actor(c)))).Produces<HoldDto>();
         buyer.MapPost("/me/holds/{id:guid}/cancel", (Guid id, HttpContext c, CommerceService s, AppDbContext db) => Run(async () => await s.Transaction(await HoldEvent(db, id, Actor(c)), e => s.Cancel(e, id, Actor(c)), Actor(c), "cancel", Key(c), new { id }))).Produces<CommerceResult>();
-        buyer.MapPost("/orders", (OrderRequest r, HttpContext c, CommerceService s, AppDbContext db) => Run(async () => await s.Transaction(await HoldEvent(db, r.HoldId, Actor(c)), async e => { var o = await s.CreateOrder(e, r.HoldId, Actor(c)); return new CommerceResult(o.Id, o.Status, o.TotalCents); }, Actor(c), "order", Key(c), r))).Produces<CommerceResult>();
-        buyer.MapGet("/me/orders", async (HttpContext c, AppDbContext db) => await db.Set<Order>().Where(x => x.UserId == Actor(c)).OrderByDescending(x => x.CreatedAt).Take(100).Select(x => new CommerceResult(x.Id, x.Status, x.TotalCents)).ToListAsync()).Produces<List<CommerceResult>>();
+        buyer.MapPost("/orders", (OrderRequest r, HttpContext c, CommerceService s, AppDbContext db) => Run(async () => await s.Transaction(await HoldEvent(db, r.HoldId, Actor(c)), async e => { var o = await s.CreateOrder(e, r.HoldId, Actor(c)); return new CommerceResult(o.Id, o.Status, o.TotalCents, Reference: o.Reference); }, Actor(c), "order", Key(c), r))).Produces<CommerceResult>();
+        buyer.MapGet("/me/orders", async (HttpContext c, AppDbContext db) => await db.Set<Order>().Where(x => x.UserId == Actor(c)).OrderByDescending(x => x.CreatedAt).Take(100).Select(x => new CommerceResult(x.Id, x.Status, x.TotalCents, null, x.Reference)).ToListAsync()).Produces<List<CommerceResult>>();
         buyer.MapGet("/me/orders/{id:guid}", (Guid id, HttpContext c, CommerceService s) => Run(() => s.OrderDetail(id, Actor(c)))).Produces<OrderDto>();
         buyer.MapPost("/demo/orders/{id:guid}/payment-result", (Guid id, DemoPaymentRequest r, HttpContext c, CommerceService s, AppDbContext db, IConfiguration config, IWebHostEnvironment env) => Run(async () => {
             RequireDemo(config, env); return await s.Transaction(await OrderEvent(db, id, Actor(c)), e => s.Pay(e, id, Actor(c), r.Approved, new DemoPaymentGateway()), Actor(c), "payment", Key(c), new { id, r.Approved });
@@ -67,7 +67,3 @@ public class HoldExpiryWorker(IServiceScopeFactory scopes, ILogger<HoldExpiryWor
         }
     }
 }
-
-
-
-

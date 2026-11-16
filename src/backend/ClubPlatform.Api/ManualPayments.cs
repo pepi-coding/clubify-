@@ -21,9 +21,9 @@ public sealed partial class CommerceService
         var hold = await db.Set<Hold>().SingleAsync(x => x.Id == order.HoldId);
         var deadline = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(hold.ExpiresAt, "America/Lima");
         var amount = (order.TotalCents / 100m).ToString("0.00", CultureInfo.InvariantCulture);
-        var message = $"Hola, reservé para {e.Name}.\nReserva: {order.Id}\nImporte: S/ {amount}\nLímite de reserva: {deadline:dd/MM/yyyy HH:mm} (Lima).\nPagaré por Yape o Plin y enviaré la captura para verificar el abono. Confirmen mi reserva, por favor.";
+        var message = $"Hola, reservé para {e.Name}.\nReserva: {order.Reference}\nImporte: S/ {amount}\nLímite de reserva: {deadline:dd/MM/yyyy HH:mm} (Lima).\nPagaré por Yape o Plin y enviaré la captura para verificar el abono. Confirmen mi reserva, por favor.";
         var url = settings == null || string.IsNullOrEmpty(settings.WhatsAppNumber) ? null : $"https://wa.me/{settings.WhatsAppNumber}?text={Uri.EscapeDataString(message)}";
-        return new(hold.ExpiresAt, Now, url, settings?.Instructions ?? "Contacta a la sede para coordinar el pago.", order.Id.ToString());
+        return new(hold.ExpiresAt, Now, url, settings?.Instructions ?? "Contacta a la sede para coordinar el pago.", order.Reference);
     }
     public async Task<ReservationDto> ReserveForWhatsApp(ClubEvent e, string actor, List<OfferLineRequest> lines)
     {
@@ -41,7 +41,7 @@ public sealed partial class CommerceService
         if (order == null) Fail(404, "ORDER_NOT_FOUND", "Reserva no encontrada.");
         if (r.Method is not ("Yape" or "Plin") || string.IsNullOrWhiteSpace(r.Note) || r.Note.Length > 500) Fail(422, "INVALID_VERIFICATION", "Indica Yape o Plin y una nota de verificación de hasta 500 caracteres.");
         if (r.Approved && (r.AmountCents != order!.TotalCents || string.IsNullOrWhiteSpace(r.ReceiptReference) || r.ReceiptReference.Trim().Length < 4 || r.ReceiptReference.Trim().Length > 80 || r.PaidAt == null || r.PaidAt > Now.AddMinutes(5) || r.PaidAt < order.CreatedAt.AddMinutes(-5))) Fail(422, "PAYMENT_DETAILS_REQUIRED", "El importe debe coincidir con la reserva. Registra código de operación (4–80 caracteres) y fecha/hora del abono.");
-        if (order!.Status is "Confirmed" or "PaymentReview") return new(order.Id, order.Status, order.TotalCents);
+        if (order!.Status is "Confirmed" or "PaymentReview") return new(order.Id, order.Status, order.TotalCents, Reference: order.Reference);
         var reference = r.ReceiptReference?.Trim().ToUpperInvariant();
         if (r.Approved && await db.Set<PaymentAttempt>().AnyAsync(x => x.TenantId == e.TenantId && x.PaymentMethod == r.Method && x.ReceiptReference == reference)) Fail(409, "RECEIPT_ALREADY_USED", "Ese código de operación ya fue registrado para otro pago.");
         // A rejected screenshot does not consume a receipt reference and may be corrected within the original hour.
@@ -57,7 +57,7 @@ public sealed partial class CommerceService
             var hold = await db.Set<Hold>().SingleAsync(x => x.Id == o.HoldId);
             var lines = await db.Set<OrderLine>().Where(x => x.OrderId == o.Id).ToListAsync();
             var verifications = await db.Set<PaymentAttempt>().Where(x => x.OrderId == o.Id).OrderByDescending(x => x.CreatedAt).Select(x => new VerificationDto(x.Status, x.PaymentMethod, x.ReceiptReference, x.AmountCents, x.VerifiedBy, x.PaidAt, x.CreatedAt)).ToListAsync();
-            result.Add(new(o.Id, o.Id.ToString(), email, e.Name, o.Status, o.TotalCents, hold.ExpiresAt, o.CreatedAt, lines.Select(x => new OrderLineDto(x.Name, x.Quantity, x.UnitPriceCents, x.Admissions, x.Zone, System.Text.Json.JsonSerializer.Deserialize<List<DrinkComponent>>(x.DrinksJson, Json)!)).ToList(), verifications));
+            result.Add(new(o.Id, o.Reference, email, e.Name, o.Status, o.TotalCents, hold.ExpiresAt, o.CreatedAt, lines.Select(x => new OrderLineDto(x.Name, x.Quantity, x.UnitPriceCents, x.Admissions, x.Zone, System.Text.Json.JsonSerializer.Deserialize<List<DrinkComponent>>(x.DrinksJson, Json)!)).ToList(), verifications));
         }
         return result;
     }

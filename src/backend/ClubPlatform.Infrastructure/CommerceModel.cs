@@ -12,6 +12,11 @@ public static class CommerceModel
     }
     public static void Configure(ModelBuilder b)
     {
+        b.HasSequence<long>("OrderReferenceNumbers", "app").StartsAt(1).HasMax(1099511627775L);
+        b.Entity<Order>().Property(x => x.Reference).HasMaxLength(9).HasDefaultValueSql("app.next_order_reference()");
+        b.Entity<Order>().Property(x => x.Reference).Metadata.SetAfterSaveBehavior(Microsoft.EntityFrameworkCore.Metadata.PropertySaveBehavior.Throw);
+        b.Entity<Order>().HasIndex(x => x.Reference).IsUnique();
+        b.Entity<Order>().ToTable(t => t.HasCheckConstraint("CK_Order_Reference", "\"Reference\" ~ '^[2-9A-HJ-NP-Z]{4}-[2-9A-HJ-NP-Z]{4}$'"));
         var settings = b.Entity<VenuePaymentSettings>(); settings.HasKey(x => new { x.TenantId, x.VenueId });
         settings.HasOne<Venue>().WithMany().HasForeignKey(x => new { x.TenantId, x.VenueId }).HasPrincipalKey(x => new { x.TenantId, x.Id }).OnDelete(DeleteBehavior.Restrict);
         settings.Property(x => x.WhatsAppNumber).HasMaxLength(15); settings.Property(x => x.Instructions).HasMaxLength(1000);
@@ -47,4 +52,3 @@ public static class CommerceModel
         var idem = Event<IdempotencyRecord>(b); idem.HasIndex(x => new { x.ActorId, x.TenantId, x.Operation, x.Key }).IsUnique(); idem.Property(x => x.ResultJson).HasColumnType("jsonb"); Event<AuditEntry>(b);
     }
 }
-

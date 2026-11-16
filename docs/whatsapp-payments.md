@@ -2,6 +2,8 @@
 
 Cambio solicitado por el usuario el 14/11/2026, antes de F5. Sustituye el checkout simulado de nuevas reservas online. No avanza a otras fases.
 
+Mejora del 16/11/2026: referencia visible corta y única (p. ej. K7M4-P9TX), conservando GUID internos. Aplica a WhatsApp, historial/detalle y promotor, incluidas reservas previas y respuestas idempotentes guardadas. Ver [reservation-references.md](reservation-references.md).
+
 ## Flujo del cliente
 
 1. Seleccionar una oferta y pulsar Reservar.

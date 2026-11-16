@@ -23,6 +23,9 @@ namespace ClubPlatform.Infrastructure.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.HasSequence("OrderReferenceNumbers", "app")
+                .HasMax(1099511627775L);
+
             modelBuilder.Entity("ClubPlatform.Core.AdmissionLog", b =>
                 {
                     b.Property<Guid>("Id")
@@ -794,6 +797,13 @@ namespace ClubPlatform.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("Reference")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(9)
+                        .HasColumnType("character varying(9)")
+                        .HasDefaultValueSql("app.next_order_reference()");
+
                     b.Property<string>("Source")
                         .IsRequired()
                         .HasColumnType("text");
@@ -820,6 +830,9 @@ namespace ClubPlatform.Infrastructure.Migrations
                     b.HasIndex("HoldId")
                         .IsUnique();
 
+                    b.HasIndex("Reference")
+                        .IsUnique();
+
                     b.HasIndex("UserId");
 
                     b.HasIndex("TenantId", "EventId");
@@ -828,6 +841,8 @@ namespace ClubPlatform.Infrastructure.Migrations
 
                     b.ToTable("Order", "app", t =>
                         {
+                            t.HasCheckConstraint("CK_Order_Reference", "\"Reference\" ~ '^[2-9A-HJ-NP-Z]{4}-[2-9A-HJ-NP-Z]{4}$'");
+
                             t.HasCheckConstraint("CK_Order_State", "\"Status\" IN ('PendingPayment','Confirmed','Expired','Cancelled','PaymentReview') AND \"TotalCents\" >= 0");
                         });
                 });

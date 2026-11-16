@@ -15,7 +15,7 @@ public record StaffSaleRequest(string CustomerEmail, List<OfferLineRequest> Line
 public record OfferSave(Guid? OfferId, string Name, long PriceCents, Guid? ResourceId, int ResourceUnits, int Admissions, List<DrinkInput> Drinks, int ExpectedRevision = 0);
 public record DrinkInput(Guid ProductId, int Quantity);
 public record ProductSave(string Name);
-public record CommerceResult(Guid Id, string Status, long TotalCents, DateTimeOffset? ExpiresAt = null);
+public record CommerceResult(Guid Id, string Status, long TotalCents, DateTimeOffset? ExpiresAt = null, string? Reference = null);
 public record OfferDto(Guid Id, Guid OfferId, int Number, string Name, long PriceCents, string Currency, Guid? ResourceId, int ResourceUnits, int Admissions, List<DrinkComponent> Drinks);
 public record InventoryDto(Guid Id, Guid? ResourceId, string Name, int Limit, int Held, int Sold, int Available, string State);
 public record CatalogDto(Guid EventId, DateTimeOffset ServerTime, List<OfferDto> Offers, List<InventoryDto> Inventory, string PaymentMode = "Demo", int ReservationMinutes = 10, bool PaymentsConfigured = true);
@@ -24,7 +24,7 @@ public record TicketDto(Guid Id, int Ordinal, string Zone, string Status, string
 public record EntitlementDto(string Name, int Granted, int Delivered);
 public record VoucherDto(Guid Id, string Token, List<EntitlementDto> Lines);
 public record OrderLineDto(string Name, int Quantity, long UnitPriceCents, int Admissions, string Zone, List<DrinkComponent> Drinks);
-public record OrderDto(Guid Id, Guid EventId, string EventName, string Status, string Source, long TotalCents, string Currency, DateTimeOffset CreatedAt, List<OrderLineDto> Lines, List<TicketDto> Tickets, VoucherDto? Voucher, List<string> PaymentStatuses, ManualPaymentInfo? Payment = null);
+public record OrderDto(Guid Id, Guid EventId, string EventName, string Status, string Source, long TotalCents, string Currency, DateTimeOffset CreatedAt, List<OrderLineDto> Lines, List<TicketDto> Tickets, VoucherDto? Voucher, List<string> PaymentStatuses, ManualPaymentInfo? Payment = null, string Reference = "");
 public sealed class CommerceException(int status, string code, string message) : Exception(message) { public int Status { get; } = status; public string Code { get; } = code; }
 
 public sealed partial class CommerceService(AppDbContext db, IDataProtectionProvider protection, IConfiguration config, TimeProvider clock)
@@ -154,12 +154,12 @@ public sealed partial class CommerceService(AppDbContext db, IDataProtectionProv
     {
         var o = await db.Set<Order>().SingleOrDefaultAsync(x => x.Id == orderId && x.EventId == e.Id && (staff || x.UserId == actor)); if (o == null) Fail(404, "ORDER_NOT_FOUND", "Pedido no encontrado.");
         if (o!.Source == "WhatsAppManual" && manual == null) Fail(403, "MANUAL_VERIFICATION_REQUIRED", "Solo un promotor autorizado puede verificar este pago.");
-        if (o.Status == "Confirmed" || o.Status == "PaymentReview") return new(o.Id, o.Status, o.TotalCents);
+        if (o.Status == "Confirmed" || o.Status == "PaymentReview") return new(o.Id, o.Status, o.TotalCents, Reference: o.Reference);
         if (o.Status == "Cancelled") Fail(409, "ORDER_CANCELLED", "Pedido cancelado.");
         var payment = Scope(new PaymentAttempt { OrderId = o.Id, Status = gateway.Resolve(approved), AmountCents = o.TotalCents, CreatedAt = Now, PaymentMethod = manual?.Method, ReceiptReference = manual?.ReceiptReference?.Trim().ToUpperInvariant(), VerifiedBy = manual == null ? null : actor, PaidAt = manual?.PaidAt?.ToUniversalTime() }, e); db.Add(payment); Audit(e, actor, (manual == null ? "DemoPayment" : "ManualPayment") + payment.Status, o.Id, manual?.Note ?? "Pago simulado");
-        if (payment.Status == "Failed") return new(o.Id, o.Status, o.TotalCents);
+        if (payment.Status == "Failed") return new(o.Id, o.Status, o.TotalCents, Reference: o.Reference);
         var h = await db.Set<Hold>().SingleAsync(x => x.Id == o.HoldId);
-        if (h.Status != "Active" || h.ExpiresAt <= Now) { o.Status = "PaymentReview"; Audit(e, actor, "LatePaymentReview", o.Id, "Pago posterior a liberación de inventario; sin beneficios"); return new(o.Id, o.Status, o.TotalCents); }
+        if (h.Status != "Active" || h.ExpiresAt <= Now) { o.Status = "PaymentReview"; Audit(e, actor, "LatePaymentReview", o.Id, "Pago posterior a liberación de inventario; sin beneficios"); return new(o.Id, o.Status, o.TotalCents, Reference: o.Reference); }
         foreach (var a in await db.Set<InventoryAllocation>().Where(x => x.HoldId == h.Id && x.Status == "Held").ToListAsync()) { var i = await db.Set<EventInventory>().SingleAsync(x => x.Id == a.InventoryId); i.Held -= a.Quantity; i.Sold += a.Quantity; a.Status = "Sold"; }
         h.Status = "Converted"; o.Status = "Confirmed";
         var drinks = new Dictionary<Guid, (string name, int q)>();
@@ -168,7 +168,7 @@ public sealed partial class CommerceService(AppDbContext db, IDataProtectionProv
             foreach (var d in JsonSerializer.Deserialize<List<DrinkComponent>>(l.DrinksJson, Json)!) { var prev = drinks.GetValueOrDefault(d.ProductId); drinks[d.ProductId] = (d.Name, prev.q + d.Quantity * l.Quantity); }
         }
         if (drinks.Count > 0) { var token = Token("v"); var voucher = Scope(new ConsumptionVoucher { OrderId = o.Id, TokenHash = Hash(token), EncryptedToken = protector.Protect(token) }, e); db.Add(voucher); foreach (var (product, d) in drinks) db.Add(Scope(new ConsumptionEntitlement { VoucherId = voucher.Id, ProductId = product, Name = d.name, Granted = d.q }, e)); }
-        Audit(e, actor, "BenefitsIssued", o.Id, o.Reason); return new(o.Id, o.Status, o.TotalCents);
+        Audit(e, actor, "BenefitsIssued", o.Id, o.Reason); return new(o.Id, o.Status, o.TotalCents, Reference: o.Reference);
     }
     private static string Token(string prefix) => prefix + "_" + Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
     public void Audit(ClubEvent e, string actor, string action, Guid subject, string reason) => db.Add(Scope(new AuditEntry { ActorId = actor, Action = action, SubjectId = subject, Reason = reason, CreatedAt = Now, CorrelationId = System.Diagnostics.Activity.Current?.TraceId.ToString() ?? Guid.NewGuid().ToString("N") }, e));
@@ -181,7 +181,7 @@ public sealed partial class CommerceService(AppDbContext db, IDataProtectionProv
             var tickets = await db.Set<Ticket>().Where(x => x.OrderId == id).OrderBy(x => x.OrderLineId).ThenBy(x => x.Ordinal).ToListAsync();
             var voucher = await db.Set<ConsumptionVoucher>().SingleOrDefaultAsync(x => x.OrderId == id);
             VoucherDto? v = voucher == null ? null : new(voucher.Id, protector.Unprotect(voucher.EncryptedToken), await db.Set<ConsumptionEntitlement>().Where(x => x.VoucherId == voucher.Id).OrderBy(x => x.Name).Select(x => new EntitlementDto(x.Name, x.Granted, x.Delivered)).ToListAsync());
-            return new OrderDto(current.Id, e.Id, e.Name, current.Status, current.Source, current.TotalCents, "PEN", current.CreatedAt, lines.Select(x => new OrderLineDto(x.Name, x.Quantity, x.UnitPriceCents, x.Admissions, x.Zone, JsonSerializer.Deserialize<List<DrinkComponent>>(x.DrinksJson, Json)!)).ToList(), tickets.Select(x => new TicketDto(x.Id, x.Ordinal, x.Zone, x.Status, protector.Unprotect(x.EncryptedToken))).ToList(), v, await db.Set<PaymentAttempt>().Where(x => x.OrderId == id).OrderBy(x => x.CreatedAt).Select(x => x.Status).ToListAsync(), current.Source == "WhatsAppManual" ? await ManualInfo(e, current) : null);
+            return new OrderDto(current.Id, e.Id, e.Name, current.Status, current.Source, current.TotalCents, "PEN", current.CreatedAt, lines.Select(x => new OrderLineDto(x.Name, x.Quantity, x.UnitPriceCents, x.Admissions, x.Zone, JsonSerializer.Deserialize<List<DrinkComponent>>(x.DrinksJson, Json)!)).ToList(), tickets.Select(x => new TicketDto(x.Id, x.Ordinal, x.Zone, x.Status, protector.Unprotect(x.EncryptedToken))).ToList(), v, await db.Set<PaymentAttempt>().Where(x => x.OrderId == id).OrderBy(x => x.CreatedAt).Select(x => x.Status).ToListAsync(), current.Source == "WhatsAppManual" ? await ManualInfo(e, current) : null, current.Reference);
         });
     }
 }
