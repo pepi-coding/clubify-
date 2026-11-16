@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { QRCodeSVG } from "qrcode.react";
-import { apiClient } from "./api/client";
+import { apiClient, ApiError } from "./api/client";
 import { ManualPaymentInstructions } from "./ManualPayments";
 import type { components } from "./api/schema";
 type S = components["schemas"];
@@ -12,6 +12,18 @@ const money = (v: number) =>
   new Intl.NumberFormat("es-PE", { style: "currency", currency: "PEN" }).format(
     v / 100,
   );
+function handoffMessage(tab: Window | null, title: string, message: string, href: string, label: string) {
+  if (!tab || tab.closed) return;
+  try {
+    tab.document.title = title;
+    const heading = tab.document.createElement('h1'); heading.textContent = title;
+    const text = tab.document.createElement('p'); text.textContent = message;
+    const link = tab.document.createElement('a'); link.textContent = label; link.href = href; link.rel = 'noopener noreferrer';
+    tab.document.body.replaceChildren(heading, text, link);
+    Object.assign(tab.document.body.style, { fontFamily: 'system-ui, sans-serif', padding: '32px', background: '#10131d', color: '#f5f2ff', lineHeight: '1.6' });
+    link.style.color = '#bca6ff';
+  } catch { /* The tab may already belong to WhatsApp. The order page retains its link. */ }
+}
 const states: Record<string, string> = {
   Active: "Reservado",
   Confirmed: "Confirmado",
@@ -98,8 +110,7 @@ export function EventShop({ eventId }: { eventId: string }) {
               const whatsapp = cat.paymentMode === 'WhatsAppManual' ? window.open('about:blank', '_blank') : null;
               if (whatsapp) {
                 whatsapp.opener = null;
-                whatsapp.document.title = 'Preparando WhatsApp…';
-                whatsapp.document.body.textContent = 'Creando tu reserva. WhatsApp se abrirá cuando el servidor la confirme.';
+                handoffMessage(whatsapp, 'Creando tu reserva…', 'Espera la confirmación del servidor antes de pagar.', window.location.href, 'Volver al evento');
               }
               setBusy(true);
               setError("");
@@ -115,10 +126,11 @@ export function EventShop({ eventId }: { eventId: string }) {
                   });
                   nav(`/orders/${r.data!.orderId}`);
                   if (whatsapp && !whatsapp.closed) {
+                    const url = r.data!.payment.whatsAppUrl;
+                    handoffMessage(whatsapp, 'Reserva creada · pago pendiente', `Referencia: ${r.data!.payment.reference}. Si WhatsApp no se abre automáticamente, usa el enlace. El pago aún está pendiente de verificación.`, url ?? new URL(`/orders/${r.data!.orderId}`, window.location.origin).href, url ? 'Abrir WhatsApp' : 'Ver mi reserva');
                     try {
-                      if (r.data!.payment.whatsAppUrl) whatsapp.location.replace(r.data!.payment.whatsAppUrl);
-                      else whatsapp.close();
-                    } catch { whatsapp.close(); }
+                      if (url) whatsapp.location.replace(url);
+                    } catch { /* Keep the explicit link instead of closing the customer's tab. */ }
                   }
                   return;
                 }
@@ -128,7 +140,8 @@ export function EventShop({ eventId }: { eventId: string }) {
                 });
                 nav(`/checkout/${r.data!.id}`);
               } catch (e) {
-                if (whatsapp && !whatsapp.closed) whatsapp.close();
+                const needsLogin = e instanceof ApiError && e.status === 401;
+                handoffMessage(whatsapp, 'No se pudo crear la reserva', (e as Error).message, new URL(needsLogin ? '/login' : '/events/' + eventId, window.location.origin).href, needsLogin ? 'Iniciar sesión' : 'Volver al evento y revisar disponibilidad');
                 setError((e as Error).message);
                 await q.refetch();
               } finally {
