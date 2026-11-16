@@ -1,3 +1,4 @@
+import { NochePhoto, limaDay } from "./Noche";
 import { EventShop, useCatalog } from "./Commerce";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
@@ -715,39 +716,138 @@ function LayoutDraft({
   );
 }
 export function PublicEvents() {
+  const [venue, setVenue] = useState(""),
+    [date, setDate] = useState("");
+  const [filters, setFilters] = useState({ venue: "", date: "" });
   const q = useQuery({
     queryKey: ["public-events"],
     queryFn: () => apiClient.GET("/api/v1/public/events").then((r) => r.data!),
   });
+  const events = q.data?.filter(
+    (e) =>
+      (!filters.venue || e.venueId === filters.venue) &&
+      (!filters.date || limaDay(e.startsAt) === filters.date),
+  );
+  const venues = [
+    ...new Map(q.data?.map((e) => [e.venueId, e.venueName])).entries(),
+  ];
   return (
-    <section className="card">
-      <p className="eyebrow">AGENDA</p>
-      <h2>Eventos publicados</h2>
-      {q.isPending ? (
-        <p>Cargando eventos…</p>
-      ) : q.isError ? (
-        <p role="alert">{q.error.message}</p>
-      ) : q.data?.length ? (
-        <div className="grid">
-          {q.data.map((e) => (
-            <Link className="card" to={`/events/${e.id}`} key={e.id}>
-              <span className="badge">{e.venueName}</span>
-              <h3>{e.name}</h3>
-              <p>{dateText(e.startsAt)}</p>
-              <span>Ver distribución →</span>
-            </Link>
-          ))}
+    <div className="n-public">
+      <section className="n-hero">
+        <NochePhoto file="hero" />
+        <div>
+          <p className="n-eyebrow">VIVE LA NOCHE · HORA DE LIMA</p>
+          <h1>
+            Tu próxima noche
+            <br />
+            empieza <em>aquí.</em>
+          </h1>
+          <p>Descubre eventos y reserva un espacio para tu grupo.</p>
+          <a className="n-btn" href="#events">
+            Explorar eventos <span aria-hidden="true">↗</span>
+          </a>
         </div>
-      ) : (
-        <p>Aún no hay eventos publicados.</p>
-      )}
-    </section>
+      </section>
+      <form
+        className="n-filters"
+        onSubmit={(e) => {
+          e.preventDefault();
+          setFilters({ venue, date });
+        }}
+        onReset={() => {
+          setVenue("");
+          setDate("");
+          setFilters({ venue: "", date: "" });
+        }}
+      >
+        <div className="n-field">
+          <label htmlFor="n-venue">Sede</label>
+          <select
+            id="n-venue"
+            value={venue}
+            onChange={(e) => setVenue(e.target.value)}
+          >
+            <option value="">Todas las sedes</option>
+            {venues.map(([id, name]) => (
+              <option key={id} value={id}>
+                {name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="n-field">
+          <label htmlFor="n-date">Fecha</label>
+          <input
+            id="n-date"
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+          />
+        </div>
+        <button className="n-btn">Buscar eventos</button>
+        <button className="n-btn n-btn--secondary" type="reset">
+          Limpiar
+        </button>
+      </form>
+      <section id="events">
+        <div className="n-section-heading">
+          <div>
+            <p className="n-eyebrow">LA AGENDA</p>
+            <h2>Elige tu próxima noche</h2>
+          </div>
+          <span className="n-muted" aria-live="polite">
+            {events ? events.length + " eventos" : ""}
+          </span>
+        </div>
+        {q.isPending ? (
+          <p>Cargando eventos…</p>
+        ) : q.isError ? (
+          <p role="alert">{q.error.message}</p>
+        ) : events?.length ? (
+          <div className="n-grid">
+            {events.map((e, index) => (
+              <article className="n-card" key={e.id}>
+                <NochePhoto file={index % 2 ? "dj" : "hero"} loading="lazy" />
+                <div className="n-card__body">
+                  <p className="n-eyebrow">{e.venueName}</p>
+                  <h3>{e.name}</h3>
+                  <p className="n-muted">{dateText(e.startsAt)}</p>
+                  <div className="n-card__footer">
+                    <span className="n-small n-muted">
+                      Entradas y experiencias
+                    </span>
+                    <Link className="n-btn" to={"/events/" + e.id}>
+                      Ver evento →
+                    </Link>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <p className="n-empty">
+            {q.data?.length
+              ? "No hay eventos con estos filtros."
+              : "Aún no hay eventos publicados."}
+          </p>
+        )}
+      </section>
+      <p className="n-small n-muted n-illustrative">
+        Fotografías ilustrativas · Consulta los detalles y las ofertas de cada
+        evento.
+      </p>
+    </div>
   );
 }
 export function PublicEvent() {
   const { eventId = "" } = useParams();
   const catalog = useCatalog(eventId);
   const [view, setView] = useState("map");
+  const [zoomed, setZoomed] = useState(false);
+  const [selected, setSelected] = useState<string>();
+  useEffect(() => {
+    setSelected(undefined);
+  }, [eventId]);
   const q = useQuery({
     queryKey: ["public-event", eventId],
     queryFn: () =>
@@ -757,19 +857,68 @@ export function PublicEvent() {
         })
         .then((r) => r.data!),
   });
+  useEffect(() => {
+    if (!selected || !q.data || !catalog.data) return;
+    const resource = q.data.resources.find(
+      (r) => r.sourceElementId === selected,
+    );
+    if (
+      !resource ||
+      !catalog.data.offers.some((o) => o.resourceId === resource.id) ||
+      !catalog.data.inventory.some(
+        (i) => i.resourceId === resource.id && i.state === "Available",
+      )
+    )
+      setSelected(undefined);
+  }, [selected, q.data, catalog.data]);
   if (q.isPending) return <p>Cargando evento…</p>;
   if (q.isError) return <p role="alert">{q.error.message}</p>;
   const e = q.data;
+  const availability = Object.fromEntries(
+    e.resources.map((r) => {
+      const i = catalog.data?.inventory.find((i) => i.resourceId === r.id);
+      const names: Record<string, string> = {
+        Available: "Disponible",
+        Reserved: "Reservado",
+        Sold: "Vendido",
+        Blocked: "Bloqueado",
+      };
+      return [
+        r.sourceElementId,
+        {
+          state: i?.state ?? "",
+          label: i
+            ? names[i.state] + " · " + i.available + " libres"
+            : "Consultando…",
+        },
+      ];
+    }),
+  );
+  const pick = (id: string) => {
+    const resource = e.resources.find((r) => r.sourceElementId === id);
+    if (
+      resource &&
+      catalog.data?.offers.some((o) => o.resourceId === resource.id) &&
+      availability[id]?.state === "Available"
+    )
+      setSelected(id);
+  };
+  const resource = e.resources.find((r) => r.sourceElementId === selected);
   return (
-    <>
-      <Link to="/">← Agenda</Link>
-      <p className="eyebrow">{e.venueName} · HORA DE LIMA</p>
-      <h1>{e.name}</h1>
-      <p>
-        {dateText(e.startsAt)} → {dateText(e.endsAt)}
-      </p>
-      <div className="grid">
-        <p>Aforo máximo: {e.capacity} personas</p>
+    <div className="n-public">
+      <section className="n-hero n-event-hero">
+        <NochePhoto file="dj" />
+        <div>
+          <Link to="/">← Volver a eventos</Link>
+          <p className="n-eyebrow">{e.venueName} · HORA DE LIMA</p>
+          <h1>{e.name}</h1>
+          <p>
+            {dateText(e.startsAt)} → {dateText(e.endsAt)}
+          </p>
+        </div>
+      </section>
+      <details className="n-schedules">
+        <summary>Horarios y aforo · {e.capacity} personas</summary>
         <p>
           Ingreso: {dateText(e.entryOpensAt)} → {dateText(e.entryClosesAt)}
         </p>
@@ -777,45 +926,126 @@ export function PublicEvent() {
           Canje: {dateText(e.redemptionOpensAt)} →{" "}
           {dateText(e.redemptionClosesAt)}
         </p>
-      </div>
-      <div className="actions">
-        <button aria-pressed={view === "map"} onClick={() => setView("map")}>
-          Ver mapa
-        </button>
-        <button aria-pressed={view === "list"} onClick={() => setView("list")}>
-          Ver lista
-        </button>
-      </div>
-      {view === "map" ? (
-        <MapCanvas
-          elements={e.elements}
-          availability={Object.fromEntries(
-            e.resources.map((r) => {
-              const i = catalog.data?.inventory.find(
-                (i) => i.resourceId === r.id,
-              );
-              const names: Record<string, string> = {
-                Available: "Disponible",
-                Reserved: "Reservado",
-                Sold: "Vendido",
-                Blocked: "Bloqueado",
-              };
-              return [
-                r.sourceElementId,
-                {
-                  state: i?.state ?? "",
-                  label: i
-                    ? `${names[i.state]} · ${i.available} libres`
-                    : "Consultando…",
-                },
-              ];
-            }),
-          )}
+      </details>
+      <div className="n-booking-layout">
+        <section className="n-venue">
+          <p className="n-eyebrow">TU LUGAR PARA ESTA NOCHE</p>
+          <h2>Mapa del local</h2>
+          <p className="n-muted">
+            Elige un espacio para consultar sus ofertas.
+          </p>
+          <div className="n-view-switch">
+            <button
+              className="n-btn n-btn--secondary"
+              aria-pressed={view === "map"}
+              onClick={() => setView("map")}
+            >
+              Ver mapa
+            </button>
+            <button
+              className="n-btn n-btn--secondary"
+              aria-pressed={view === "list"}
+              onClick={() => setView("list")}
+            >
+              Ver lista
+            </button>
+            {view === "map" && (
+              <button
+                className="n-btn n-btn--secondary"
+                aria-pressed={zoomed}
+                onClick={() => setZoomed(!zoomed)}
+              >
+                {zoomed ? "Ajustar mapa" : "Ampliar mapa"}
+              </button>
+            )}
+          </div>
+          <div className="n-map-wrap">
+            {view === "map" ? (
+              <div
+                className="n-map-scroll"
+                tabIndex={zoomed ? 0 : undefined}
+                aria-label="Vista desplazable del mapa"
+              >
+                <div className={zoomed ? "n-map-zoom" : undefined}>
+                  <MapCanvas
+                    elements={e.elements}
+                    selected={selected}
+                    onSelect={pick}
+                    availability={availability}
+                    presentation
+                    selectableIds={e.resources
+                      .filter(
+                        (r) =>
+                          catalog.data?.offers.some(
+                            (o) => o.resourceId === r.id,
+                          ) &&
+                          availability[r.sourceElementId]?.state ===
+                            "Available",
+                      )
+                      .map((r) => r.sourceElementId)}
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="n-resource-list" aria-label="Lista de elementos">
+                {e.elements.map((item) => (
+                  <button
+                    className="n-btn n-btn--secondary"
+                    key={item.id}
+                    disabled={
+                      item.mode === "Decoration" ||
+                      availability[item.id]?.state !== "Available" ||
+                      !e.resources.some(
+                        (r) =>
+                          r.sourceElementId === item.id &&
+                          catalog.data?.offers.some(
+                            (o) => o.resourceId === r.id,
+                          ),
+                      )
+                    }
+                    aria-pressed={selected === item.id}
+                    onClick={() => pick(item.id)}
+                  >
+                    <strong>{item.name}</strong>
+                    <span>
+                      {item.capacity ? item.capacity + " personas · " : ""}
+                      {availability[item.id]?.label ?? "Decorativo · Sin venta"}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+            <div className="n-legend">
+              <span>
+                <i className="n-swatch" />
+                Disponible
+              </span>
+              <span>
+                <i className="n-swatch n-swatch--selected" />
+                Seleccionado
+              </span>
+              <span>
+                <i className="n-swatch n-swatch--reserved" />
+                Reservado
+              </span>
+              <span>
+                <i className="n-swatch n-swatch--sold" />
+                Vendido
+              </span>
+            </div>
+          </div>
+          <p className="n-small n-muted">
+            La disponibilidad del espacio puede variar según la oferta. El cupo
+            y el precio se confirman al reservar.
+          </p>
+        </section>
+        <EventShop
+          key={eventId}
+          eventId={eventId}
+          resourceId={resource?.id}
+          clearSelection={() => setSelected(undefined)}
         />
-      ) : (
-        <MapList elements={e.elements} />
-      )}
-      <EventShop eventId={eventId} />
-    </>
+      </div>
+    </div>
   );
 }

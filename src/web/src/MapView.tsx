@@ -1,4 +1,5 @@
 import { useRef } from "react";
+import { useNoche } from "./Noche";
 import type { components } from "./api/schema";
 export type MapElement = components["schemas"]["MapElement"];
 const labels: Record<string, string> = {
@@ -22,13 +23,18 @@ export function MapCanvas({
   onSelect,
   onChange,
   availability,
+  presentation = false,
+  selectableIds,
 }: {
   elements: MapElement[];
   availability?: Record<string, { state: string; label: string }>;
   selected?: string;
   onSelect?: (id: string) => void;
   onChange?: (elements: MapElement[]) => void;
+  presentation?: boolean;
+  selectableIds?: string[];
 }) {
+  const { theme } = useNoche();
   const drag = useRef<{
     id: string;
     startX: number;
@@ -38,9 +44,13 @@ export function MapCanvas({
   } | null>(null);
   return (
     <svg
-      className={"map-canvas " + (onChange ? "editable" : "")}
+      className={
+        "map-canvas " +
+        (onChange ? "editable" : "") +
+        (presentation ? " n-published-map" : "")
+      }
       viewBox="0 0 1000 700"
-      role="img"
+      role={onSelect ? "group" : "img"}
       aria-label={
         onChange
           ? "Editor de distribución de sede"
@@ -104,6 +114,20 @@ export function MapCanvas({
       {elements.map((item) => {
         const g = item.geometry;
         const stock = availability?.[item.id];
+        const enabled =
+          !!onSelect && (!presentation || !!selectableIds?.includes(item.id));
+        const piece = (
+          {
+            Box: "box-sofa",
+            Table: "round-table",
+            VIP: "box-sofa",
+            General: "standing-zone",
+            Stage: "stage",
+            Bar: "bar",
+            Entrance: "entrance",
+            Service: "dj-booth",
+          } as Record<string, string>
+        )[item.kind];
         const x = g.x * 1000,
           y = g.y * 700,
           w = g.width * 1000,
@@ -112,18 +136,22 @@ export function MapCanvas({
           <g
             key={item.id}
             data-element-id={item.id}
+            data-state={stock?.state}
+            data-selected={selected === item.id}
             transform={`rotate(${g.rotation} ${x + w / 2} ${y + h / 2})`}
-            tabIndex={onSelect ? 0 : undefined}
+            tabIndex={enabled ? 0 : undefined}
             role={onSelect ? "button" : undefined}
+            aria-disabled={onSelect && !enabled ? true : undefined}
+            aria-pressed={onSelect ? selected === item.id : undefined}
             aria-label={`${item.name}, ${modeName[item.mode]}, ${item.capacity} personas${stock ? ", " + stock.label : ""}`}
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") {
                 e.preventDefault();
-                onSelect?.(item.id);
+                if (enabled) onSelect?.(item.id);
               }
             }}
             onPointerDown={(e) => {
-              if (!onSelect) return;
+              if (!enabled || !onSelect) return;
               e.preventDefault();
               onSelect(item.id);
               e.currentTarget.ownerSVGElement?.setPointerCapture(e.pointerId);
@@ -159,6 +187,29 @@ export function MapCanvas({
               stroke={selected === item.id ? "#f7dd8e" : "#8b91b3"}
               strokeWidth={selected === item.id ? 4 : 2}
             />
+            {presentation && piece && (
+              <image
+                className="n-map-piece"
+                href={`/assets/noche/${theme}/map/${piece}.svg`}
+                x={x + 4}
+                y={y + 4}
+                width={Math.max(0, w - 8)}
+                height={Math.max(0, h - 8)}
+                preserveAspectRatio="xMidYMid meet"
+                pointerEvents="none"
+              />
+            )}
+            {presentation && (
+              <rect
+                className="n-map-label-bg"
+                x={x + 5}
+                y={y + h / 2 - 25}
+                width={Math.max(0, w - 10)}
+                height="57"
+                rx="6"
+                pointerEvents="none"
+              />
+            )}
             <text
               x={x + w / 2}
               y={y + h / 2 - 3}

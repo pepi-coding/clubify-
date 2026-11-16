@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { QRCodeSVG } from "qrcode.react";
 import { apiClient, ApiError } from "./api/client";
 import { ManualPaymentInstructions } from "./ManualPayments";
+import { NochePhoto } from "./Noche";
 import type { components } from "./api/schema";
 type S = components["schemas"];
 type Catalog = S["CatalogDto"];
@@ -12,17 +13,36 @@ const money = (v: number) =>
   new Intl.NumberFormat("es-PE", { style: "currency", currency: "PEN" }).format(
     v / 100,
   );
-function handoffMessage(tab: Window | null, title: string, message: string, href: string, label: string) {
+function handoffMessage(
+  tab: Window | null,
+  title: string,
+  message: string,
+  href: string,
+  label: string,
+) {
   if (!tab || tab.closed) return;
   try {
     tab.document.title = title;
-    const heading = tab.document.createElement('h1'); heading.textContent = title;
-    const text = tab.document.createElement('p'); text.textContent = message;
-    const link = tab.document.createElement('a'); link.textContent = label; link.href = href; link.rel = 'noopener noreferrer';
+    const heading = tab.document.createElement("h1");
+    heading.textContent = title;
+    const text = tab.document.createElement("p");
+    text.textContent = message;
+    const link = tab.document.createElement("a");
+    link.textContent = label;
+    link.href = href;
+    link.rel = "noopener noreferrer";
     tab.document.body.replaceChildren(heading, text, link);
-    Object.assign(tab.document.body.style, { fontFamily: 'system-ui, sans-serif', padding: '32px', background: '#10131d', color: '#f5f2ff', lineHeight: '1.6' });
-    link.style.color = '#bca6ff';
-  } catch { /* The tab may already belong to WhatsApp. The order page retains its link. */ }
+    Object.assign(tab.document.body.style, {
+      fontFamily: "system-ui, sans-serif",
+      padding: "32px",
+      background: "#10131d",
+      color: "#f5f2ff",
+      lineHeight: "1.6",
+    });
+    link.style.color = "#bca6ff";
+  } catch {
+    /* The tab may already belong to WhatsApp. The order page retains its link. */
+  }
 }
 const states: Record<string, string> = {
   Active: "Reservado",
@@ -61,8 +81,17 @@ export function useCatalog(eventId: string) {
     refetchInterval: 10000,
   });
 }
-export function EventShop({ eventId }: { eventId: string }) {
+export function EventShop({
+  eventId,
+  resourceId,
+  clearSelection,
+}: {
+  eventId: string;
+  resourceId?: string;
+  clearSelection?: () => void;
+}) {
   const q = useCatalog(eventId);
+  const [offerId, setOfferId] = useState("");
   const nav = useNavigate();
   const key = useOperation();
   const [busy, setBusy] = useState(false),
@@ -70,14 +99,23 @@ export function EventShop({ eventId }: { eventId: string }) {
   if (q.isPending) return <p>Cargando disponibilidad…</p>;
   if (q.isError) return <p role="alert">{q.error.message}</p>;
   const cat = q.data;
+  const offers = cat.offers.filter(
+    (o) => !resourceId || o.resourceId === resourceId,
+  );
+  const offer = offers.find((o) => o.id === offerId) ?? offers[0];
   return (
-    <section className="card">
+    <section className="card n-shop">
       <p className="eyebrow">
         {cat.paymentMode === "WhatsAppManual"
           ? "RESERVAS · YAPE O PLIN POR WHATSAPP"
           : "RESERVAS · PAGO SIMULADO"}
       </p>
       <h2>Ofertas y disponibilidad</h2>
+      <NochePhoto
+        className="n-summary__photo"
+        file="combo"
+        alt="Fotografía ilustrativa de una experiencia nocturna"
+      />
       <p>
         Reserva durante {cat.reservationMinutes} minutos.{" "}
         {cat.paymentMode === "WhatsAppManual"
@@ -90,16 +128,40 @@ export function EventShop({ eventId }: { eventId: string }) {
           disponibles cuando lo configure.
         </p>
       )}
-      <div className="inventory-list">
-        {cat.inventory.map((i) => (
-          <p key={i.id}>
-            <strong>{i.name}</strong> · {states[i.state]} · {i.available}{" "}
-            disponibles · {i.held} reservados · {i.sold} vendidos
-          </p>
-        ))}
-      </div>
+      <details className="n-inventory">
+        <summary>Consultar disponibilidad total</summary>
+        <div className="inventory-list">
+          {cat.inventory.map((i) => (
+            <p key={i.id}>
+              <strong>{i.name}</strong> · {states[i.state]} · {i.available}{" "}
+              disponibles · {i.held} reservados · {i.sold} vendidos
+            </p>
+          ))}
+        </div>
+      </details>
+      {resourceId && (
+        <button className="n-btn n-btn--secondary" onClick={clearSelection}>
+          Ver todas las ofertas
+        </button>
+      )}
+      {offers.length > 1 && (
+        <div className="n-field">
+          <label htmlFor="n-offer">Elige tu oferta</label>
+          <select
+            id="n-offer"
+            value={offer?.id ?? ""}
+            onChange={(e) => setOfferId(e.target.value)}
+          >
+            {offers.map((o) => (
+              <option key={o.id} value={o.id}>
+                {o.name} · {money(o.priceCents)}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
       <div className="grid">
-        {cat.offers.map((o) => (
+        {(offer ? [offer] : []).map((o) => (
           <OfferCard
             key={o.id}
             o={o}
@@ -107,10 +169,19 @@ export function EventShop({ eventId }: { eventId: string }) {
             busy={busy || !cat.paymentsConfigured}
             reserve={async (quantity) => {
               // Open during the click gesture, before the asynchronous reservation.
-              const whatsapp = cat.paymentMode === 'WhatsAppManual' ? window.open('about:blank', '_blank') : null;
+              const whatsapp =
+                cat.paymentMode === "WhatsAppManual"
+                  ? window.open("about:blank", "_blank")
+                  : null;
               if (whatsapp) {
                 whatsapp.opener = null;
-                handoffMessage(whatsapp, 'Creando tu reserva…', 'Espera la confirmación del servidor antes de pagar.', window.location.href, 'Volver al evento');
+                handoffMessage(
+                  whatsapp,
+                  "Creando tu reserva…",
+                  "Espera la confirmación del servidor antes de pagar.",
+                  window.location.href,
+                  "Volver al evento",
+                );
               }
               setBusy(true);
               setError("");
@@ -127,10 +198,22 @@ export function EventShop({ eventId }: { eventId: string }) {
                   nav(`/orders/${r.data!.orderId}`);
                   if (whatsapp && !whatsapp.closed) {
                     const url = r.data!.payment.whatsAppUrl;
-                    handoffMessage(whatsapp, 'Reserva creada · pago pendiente', `Referencia: ${r.data!.payment.reference}. Si WhatsApp no se abre automáticamente, usa el enlace. El pago aún está pendiente de verificación.`, url ?? new URL(`/orders/${r.data!.orderId}`, window.location.origin).href, url ? 'Abrir WhatsApp' : 'Ver mi reserva');
+                    handoffMessage(
+                      whatsapp,
+                      "Reserva creada · pago pendiente",
+                      `Referencia: ${r.data!.payment.reference}. Si WhatsApp no se abre automáticamente, usa el enlace. El pago aún está pendiente de verificación.`,
+                      url ??
+                        new URL(
+                          `/orders/${r.data!.orderId}`,
+                          window.location.origin,
+                        ).href,
+                      url ? "Abrir WhatsApp" : "Ver mi reserva",
+                    );
                     try {
                       if (url) whatsapp.location.replace(url);
-                    } catch { /* Keep the explicit link instead of closing the customer's tab. */ }
+                    } catch {
+                      /* Keep the explicit link instead of closing the customer's tab. */
+                    }
                   }
                   return;
                 }
@@ -141,7 +224,18 @@ export function EventShop({ eventId }: { eventId: string }) {
                 nav(`/checkout/${r.data!.id}`);
               } catch (e) {
                 const needsLogin = e instanceof ApiError && e.status === 401;
-                handoffMessage(whatsapp, 'No se pudo crear la reserva', (e as Error).message, new URL(needsLogin ? '/login' : '/events/' + eventId, window.location.origin).href, needsLogin ? 'Iniciar sesión' : 'Volver al evento y revisar disponibilidad');
+                handoffMessage(
+                  whatsapp,
+                  "No se pudo crear la reserva",
+                  (e as Error).message,
+                  new URL(
+                    needsLogin ? "/login" : "/events/" + eventId,
+                    window.location.origin,
+                  ).href,
+                  needsLogin
+                    ? "Iniciar sesión"
+                    : "Volver al evento y revisar disponibilidad",
+                );
                 setError((e as Error).message);
                 await q.refetch();
               } finally {
@@ -176,7 +270,7 @@ function OfferCard({
     o.admissions ? Math.floor((global?.available ?? 0) / o.admissions) : 100,
   );
   return (
-    <article className="card">
+    <article className="card n-offer">
       <h3>{o.name}</h3>
       <p className="price">{money(o.priceCents)}</p>
       <p>{o.admissions} accesos por unidad</p>
@@ -185,18 +279,24 @@ function OfferCard({
           {d.name} × {d.quantity}
         </p>
       ))}
-      <label>
-        Cantidad de {o.name}
-        <input
-          type="number"
-          min="1"
-          max={Math.max(1, max)}
-          value={quantity}
-          onChange={(e) => setQuantity(Number(e.target.value))}
-        />
-      </label>
+      {(max > 1 || quantity !== 1) && (
+        <label>
+          Cantidad de {o.name}
+          <input
+            type="number"
+            min="1"
+            max={Math.max(1, max)}
+            value={quantity}
+            onChange={(e) => setQuantity(Number(e.target.value))}
+          />
+        </label>
+      )}
+      {max < 1 && (
+        <p className="n-muted">Sin disponibilidad para esta oferta.</p>
+      )}
       <p>Total de selección: {money(o.priceCents * quantity)}</p>
       <button
+        className="n-btn"
         disabled={
           busy || max < quantity || quantity < 1 || !Number.isInteger(quantity)
         }
@@ -353,7 +453,9 @@ export function OrderDetail() {
           : "DEMOSTRACIÓN · SIN COBRO REAL"}
       </p>
       <h1>{o.eventName}</h1>
-      <p>Reserva <strong className="reservation-reference">{o.reference}</strong></p>
+      <p>
+        Reserva <strong className="reservation-reference">{o.reference}</strong>
+      </p>
       <h2>{states[o.status]}</h2>
       <p>
         {money(o.totalCents)} ·{" "}

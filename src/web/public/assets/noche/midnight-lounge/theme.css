@@ -1,0 +1,19 @@
+.noche[data-theme="midnight-lounge"] {
+  --n-bg: #11100E;
+  --n-surface: #1C1915;
+  --n-raised: #29231D;
+  --n-text: #F3EFE6;
+  --n-muted: #C2B8A9;
+  --n-accent: #C8AA73;
+  --n-accentHover: #DDC393;
+  --n-accentText: #16120B;
+  --n-secondary: #E0BE8C;
+  --n-line: #655744;
+  --n-selectedBg: #4A3A22;
+  --n-available: #E8DFCF;
+  --n-reserved: #EDBF88;
+  --n-sold: #928B82;
+  --n-heading: Georgia, "Times New Roman", serif;
+  --n-action: #C8AA73;
+  --n-actionHover: #DDC393;
+}

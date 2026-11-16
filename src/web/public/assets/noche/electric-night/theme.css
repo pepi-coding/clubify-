@@ -1,0 +1,19 @@
+.noche[data-theme="electric-night"] {
+  --n-bg: #09090F;
+  --n-surface: #15151F;
+  --n-raised: #20202F;
+  --n-text: #F6F4FC;
+  --n-muted: #B9B6CA;
+  --n-accent: #8B5CF6;
+  --n-accentHover: #7C3AED;
+  --n-accentText: #FFFFFF;
+  --n-secondary: #F48CDA;
+  --n-line: #454153;
+  --n-selectedBg: #322052;
+  --n-available: #DDD6FE;
+  --n-reserved: #F5CC78;
+  --n-sold: #858190;
+  --n-heading: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --n-action: #7C3AED;
+  --n-actionHover: #6D28D9;
+}

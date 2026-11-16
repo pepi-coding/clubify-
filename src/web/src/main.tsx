@@ -1,12 +1,21 @@
 import React, { useState } from "react";
 import { createRoot } from "react-dom/client";
-import { BrowserRouter, Routes, Route, Link, Navigate } from "react-router-dom";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Link,
+  Navigate,
+  useLocation,
+} from "react-router-dom";
 import {
   QueryClient,
   QueryClientProvider,
   useQuery,
 } from "@tanstack/react-query";
 import "./style.css";
+import "./noche.css";
+import { NocheProvider, ThemePicker, useNoche } from "./Noche";
 import { Checkout, MyOrders, OrderDetail, CommerceWorkspace } from "./Commerce";
 import { PaymentVerificationWorkspace } from "./ManualPayments";
 import { OperationsWorkspace } from "./Operations";
@@ -25,17 +34,12 @@ const client = new QueryClient({
 });
 import { apiClient } from "./api/client";
 function App() {
+  const { theme } = useNoche();
+  const path = useLocation().pathname;
+  const isPublic = path === "/" || path.startsWith("/events/");
   const me = useQuery({
     queryKey: ["me"],
     queryFn: () => apiClient.GET("/api/v1/auth/me").then((r) => r.data!),
-  });
-  const health = useQuery({
-    queryKey: ["health"],
-    queryFn: async () => {
-      const r = await fetch("/health/ready");
-      if (!r.ok) throw Error();
-      return r.json();
-    },
   });
   const [error, setError] = useState("");
   async function logout() {
@@ -48,12 +52,31 @@ function App() {
     }
   }
   return (
-    <>
+    <div
+      className={isPublic ? "noche n-app" : undefined}
+      data-theme={isPublic ? theme : undefined}
+    >
       <header>
         <Link to="/" className="brand">
-          CLUB<span>PLATFORM</span>
+          {isPublic ? (
+            <img
+              className="n-logo"
+              src={`/assets/noche/${theme}/logo.svg`}
+              alt="NOCHE · Inicio"
+            />
+          ) : (
+            <>
+              CLUB<span>PLATFORM</span>
+            </>
+          )}
         </Link>
-        <nav>
+        <nav aria-label="Principal">
+          {isPublic && (
+            <>
+              <Link to="/">Eventos</Link>
+              <ThemePicker />
+            </>
+          )}
           {me.data ? (
             <>
               <span>{me.data.email}</span>
@@ -72,20 +95,6 @@ function App() {
             path="/"
             element={
               <>
-                <p className="eyebrow">SEDES, MAPAS Y EVENTOS</p>
-                <h1>
-                  Tu operación,
-                  <br />
-                  en su espacio.
-                </h1>
-                <p>Acceso seguro por empresa, sede y función.</p>
-                <p className="status">
-                  {health.isPending
-                    ? "Comprobando conexión…"
-                    : health.isError
-                      ? "Base de datos no disponible"
-                      : "API y base de datos conectadas"}
-                </p>
                 <PublicEvents />
                 {me.isPending ? (
                   <p>Cargando sesión…</p>
@@ -170,8 +179,10 @@ function App() {
           />
         </Routes>
       </main>
-      <footer>ClubPlatform · Reservas y pagos por WhatsApp</footer>
-    </>
+      <footer>
+        {isPublic ? "NOCHE" : "ClubPlatform"} · Reservas y pagos por WhatsApp
+      </footer>
+    </div>
   );
 }
 function Login() {
@@ -389,7 +400,9 @@ createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <QueryClientProvider client={client}>
       <BrowserRouter>
-        <App />
+        <NocheProvider>
+          <App />
+        </NocheProvider>
       </BrowserRouter>
     </QueryClientProvider>
   </React.StrictMode>,

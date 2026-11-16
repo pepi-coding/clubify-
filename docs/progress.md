@@ -2,6 +2,10 @@
 
 Actualizado: 16/11/2026 (America/Lima).
 
+## Presentación pública NOCHE
+
+Agenda, filtros de sede/fecha, detalle de evento, mapa/lista y ofertas rediseñados con los assets suministrados. Electric Night por defecto y Midnight Lounge seleccionable; preferencia del navegador, sin carga de assets por empresa todavía. Se conservan el plano publicado, inventario real, reserva y WhatsApp separado. Editor operativo sin rediseño. Build aprobado y los 22 escenarios de navegador aprobados tras corregir etiquetas accesibles y repetir los flujos afectados. Sin migraciones ni despliegue; detalle en `docs/public-design.md`.
+
 | Fase | Estado |
 |---|---|
 | F0 — Base ejecutable | completada |
