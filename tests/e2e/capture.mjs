@@ -1,0 +1,12 @@
+import { chromium } from '@playwright/test';
+import { mkdir } from 'node:fs/promises';
+const browser=await chromium.launch();
+const page=await browser.newPage({viewport:{width:1366,height:900}});
+await page.goto('http://localhost:5081');
+await page.getByText('API y base de datos conectadas').waitFor();
+await mkdir('../../docs/screenshots',{recursive:true});
+await page.screenshot({path:'../../docs/screenshots/home-desktop.png',fullPage:true});
+await page.setViewportSize({width:390,height:844});
+await page.goto('http://localhost:5081/login');
+await page.screenshot({path:'../../docs/screenshots/login-mobile.png',fullPage:true});
+await browser.close();

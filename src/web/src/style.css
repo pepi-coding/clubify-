@@ -1,0 +1,338 @@
+@import "tailwindcss";
+:root {
+  font-family:
+    Inter,
+    Segoe UI,
+    sans-serif;
+  color: #f3f4f8;
+  background: #101119;
+  font-synthesis: none;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}
+header {
+  padding: 24px 6%;
+  border-bottom: 1px solid #313340;
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: center;
+}
+a {
+  color: inherit;
+  text-decoration: none;
+}
+.brand {
+  font-weight: 800;
+  letter-spacing: 0.1em;
+}
+.brand span {
+  color: #a9a0ff;
+}
+nav {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+main {
+  max-width: 1120px;
+  margin: auto;
+  padding: 64px 24px;
+  min-height: 80vh;
+}
+h1 {
+  font-size: clamp(36px, 6vw, 64px);
+  line-height: 1.1;
+  font-weight: 750;
+  margin: 20px 0;
+}
+h2 {
+  font-size: 24px;
+  margin: 16px 0;
+}
+h3 {
+  font-size: 23px;
+  margin: 15px 0;
+}
+p {
+  color: #c3c5d2;
+  line-height: 1.7;
+  margin: 16px 0;
+}
+.eyebrow {
+  font-size: 12px;
+  letter-spacing: 0.17em;
+  color: #b7adff;
+}
+.status {
+  font-size: 14px;
+  color: #aedbce;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 18px;
+}
+.card {
+  display: block;
+  background: #1b1d29;
+  border: 1px solid #393c4b;
+  border-radius: 16px;
+  padding: 28px;
+  margin-top: 24px;
+}
+.card small {
+  color: #ada5e8;
+}
+.primary,
+button {
+  display: inline-block;
+  padding: 12px 20px;
+  border-radius: 9px;
+  background: #b5a8ff;
+  color: #151023;
+  font-weight: 700;
+  border: 0;
+  cursor: pointer;
+  margin-top: 12px;
+}
+.primary {
+  margin-top: 24px;
+}
+button:disabled {
+  opacity: 0.6;
+}
+a:focus-visible,
+button:focus-visible,
+input:focus-visible {
+  outline: 3px solid #e2daff;
+  outline-offset: 4px;
+}
+input {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  margin: 8px 0 22px;
+  border-radius: 8px;
+  border: 1px solid #65687b;
+  background: #11131d;
+  color: #fff;
+}
+label {
+  display: block;
+}
+form {
+  margin-top: 24px;
+  max-width: 480px;
+}
+.login {
+  max-width: 540px;
+  margin: auto;
+}
+.login h1 {
+  font-size: 36px;
+}
+[role="alert"] {
+  color: #ffb3b3;
+}
+footer {
+  padding: 24px;
+  text-align: center;
+  color: #a8aabb;
+  font-size: 12px;
+}
+@media (max-width: 640px) {
+  header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  main {
+    padding-top: 32px;
+  }
+  nav {
+    font-size: 14px;
+    gap: 12px;
+  }
+}
+select {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  margin: 8px 0 22px;
+  border: 1px solid #65687b;
+  border-radius: 8px;
+  background: #11131d;
+  color: #fff;
+}
+select:focus-visible,
+summary:focus-visible {
+  outline: 3px solid #e2daff;
+  outline-offset: 4px;
+}
+summary {
+  cursor: pointer;
+  font-size: 20px;
+  font-weight: 650;
+}
+.actions,
+.palette,
+.toolbar {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.toolbar > label {
+  flex: 1;
+  min-width: 200px;
+}
+.secondary {
+  background: #34394c;
+  color: #f3f4f8;
+}
+.danger {
+  background: #5c2837;
+  color: #ffdae0;
+}
+.badge {
+  display: inline-block;
+  padding: 5px 10px;
+  background: #31324e;
+  border-radius: 6px;
+  font-size: 13px;
+}
+.event-row {
+  padding: 20px 0;
+  border-bottom: 1px solid #3b3f51;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+}
+.event-row .actions {
+  max-width: 330px;
+}
+.event-form {
+  max-width: 100%;
+  padding-top: 24px;
+  border-top: 1px solid #555b70;
+}
+.editor-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 260px;
+  gap: 24px;
+  margin-top: 24px;
+  align-items: start;
+}
+.editor-grid:has(> div:only-child) {
+  grid-template-columns: 1fr;
+}
+.map-canvas {
+  width: 100%;
+  aspect-ratio: 10/7;
+  display: block;
+  margin-top: 24px;
+  border: 1px solid #41495e;
+  border-radius: 12px;
+}
+.map-canvas.editable {
+  touch-action: none;
+  user-select: none;
+}
+.map-canvas.editable g {
+  cursor: move;
+}
+.map-canvas g:focus {
+  outline: none;
+  filter: brightness(1.6);
+}
+.properties {
+  background: #1b1d29;
+  border: 1px solid #393c4b;
+  border-radius: 12px;
+  padding: 20px;
+}
+.properties h3 {
+  font-size: 18px;
+}
+.properties input,
+.properties select {
+  padding: 8px;
+  margin-bottom: 12px;
+}
+.palette button {
+  padding: 9px 14px;
+  background: #31384d;
+  color: #e6e5f7;
+}
+.list-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 15px 0;
+  border-bottom: 1px solid #34384b;
+}
+.list-row span {
+  color: #bec7d9;
+}
+button[aria-pressed="false"] {
+  background: #34394c;
+  color: #fff;
+}
+input[type="datetime-local"] {
+  min-width: 0;
+  color-scheme: dark;
+}
+details form {
+  max-width: 100%;
+}
+@media (max-width: 760px) {
+  .editor-grid {
+    grid-template-columns: 1fr;
+  }
+  .properties {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0 12px;
+  }
+  .properties h3,
+  .properties > button {
+    grid-column: 1/-1;
+  }
+  .event-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .event-row .actions {
+    max-width: none;
+  }
+  .list-row {
+    flex-direction: column;
+    gap: 5px;
+  }
+  .card {
+    padding: 20px;
+  }
+  .palette {
+    gap: 6px;
+  }
+  .palette button {
+    padding: 8px 10px;
+    font-size: 14px;
+  }
+}
+.qr-card svg { background: white; border-radius: 8px; max-width: 100%; }
+.qr-card code { display: block; overflow-wrap: anywhere; white-space: normal; padding: 12px; }
+.inventory-list { border-left: 3px solid #bfa1ee; padding-left: 16px; margin-bottom: 24px; }
+.price { font-size: 1.5rem; font-weight: 700; color: #f7dd8e; }
+.list-row { flex-wrap: wrap; gap: 10px; }
+nav { flex-wrap: wrap; }
+textarea { width: 100%; min-height: 90px; border: 1px solid #505565; border-radius: 7px; background: #10131d; color: #eee; padding: 10px; font: inherit; box-sizing: border-box; }
+.reservation-reference { overflow-wrap: anywhere; }
+.verification-check { display: flex; gap: 10px; align-items: flex-start; margin: 16px 0; }
+.verification-check input { width: auto; margin-top: 5px; }

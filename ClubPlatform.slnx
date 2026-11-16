@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/" />
+  <Folder Name="/src/backend/">
+    <Project Path="src/backend/ClubPlatform.Api/ClubPlatform.Api.csproj" />
+    <Project Path="src/backend/ClubPlatform.Core/ClubPlatform.Core.csproj" />
+    <Project Path="src/backend/ClubPlatform.Infrastructure/ClubPlatform.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/" />
+  <Folder Name="/tests/backend/">
+    <Project Path="tests/backend/ClubPlatform.Tests.csproj" />
+  </Folder>
+</Solution>
