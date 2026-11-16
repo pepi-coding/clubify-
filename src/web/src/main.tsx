@@ -9,6 +9,7 @@ import {
 import "./style.css";
 import { Checkout, MyOrders, OrderDetail, CommerceWorkspace } from "./Commerce";
 import { PaymentVerificationWorkspace } from "./ManualPayments";
+import { OperationsWorkspace } from "./Operations";
 import {
   LayoutEditor,
   PlanningWorkspace,
@@ -331,8 +332,16 @@ function Workspace({ me }: { me: Me | undefined }) {
                 ? "Caja"
                 : "Operación"}
         </h2>
-        <p>Consulta los eventos de la sede. Los ingresos y canjes, en F5.</p>
+        <p>Selecciona un evento de tu sede y opera según tus permisos.</p>
       </section>
+      {(role === "Security" || role === "BarStaff") && (
+        <OperationsWorkspace
+          tenantId={tenantId!}
+          venueId={venueId!}
+          mode={role === "Security" ? "admission" : "redemption"}
+          actor={me?.email ?? ""}
+        />
+      )}
       {["TenantAdmin", "VenueManager", "Cashier"].includes(role ?? "") && (
         <CommerceWorkspace
           tenantId={tenantId!}
@@ -347,12 +356,14 @@ function Workspace({ me }: { me: Me | undefined }) {
           admin={role !== "Promoter"}
         />
       )}
-      <PlanningWorkspace
-        tenantId={tenantId!}
-        venueId={venueId!}
-        admin={["TenantAdmin", "VenueManager"].includes(role ?? "")}
-        tenantAdmin={role === "TenantAdmin"}
-      />
+      {role !== "Security" && role !== "BarStaff" && (
+        <PlanningWorkspace
+          tenantId={tenantId!}
+          venueId={venueId!}
+          admin={["TenantAdmin", "VenueManager"].includes(role ?? "")}
+          tenantAdmin={role === "TenantAdmin"}
+        />
+      )}
       <p role="status">{message}</p>
     </>
   );

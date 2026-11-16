@@ -1,6 +1,7 @@
+import { login } from './auth';
 import { test, expect } from '@playwright/test';
 import { writeFile } from 'node:fs/promises';
-async function login(page,email,key){await page.goto('/login');await page.getByLabel('Correo electrónico').fill(email);await page.getByLabel('Contraseña',{exact:true}).fill(process.env['Seed__Passwords__'+key]);await page.getByRole('button',{name:'Entrar',exact:true}).click();await expect(page.getByRole('button',{name:'Cerrar sesión'})).toBeVisible();}
+
 async function post(page,url,data){const csrf=await (await page.request.get('/api/v1/auth/csrf')).json();const r=await page.request.post(url,{headers:{'X-CSRF-TOKEN':csrf.token,'Idempotency-Key':crypto.randomUUID()},data});expect(r.ok(),await r.text()).toBeTruthy();return r.json();}
 async function settings(page,base,data){const csrf=await (await page.request.get('/api/v1/auth/csrf')).json();const r=await page.request.put(base+'/payment-settings',{headers:{'X-CSRF-TOKEN':csrf.token},data});expect(r.ok(),await r.text()).toBeTruthy();}
 test('WhatsApp reservation holds one hour and only a promoter can verify Yape and issue ten QR',async({page,context,baseURL},info)=>{
@@ -18,7 +19,3 @@ test('WhatsApp reservation holds one hour and only a promoter can verify Yape an
 test('F3 staff publishes offer and F4 registers courtesy',async({page},info)=>{
  await login(page,'admin.a@demo.local','AdminA');await page.goto('/workspace/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/aaaaaaaa-0000-0000-0000-000000000001');await page.getByRole('combobox',{name:'Evento de venta',exact:true}).selectOption('aaaaaaaa-3333-0000-0000-000000000001');const name=`General E2E ${info.project.name} ${Date.now()}`;await page.getByLabel('Nombre de oferta',{exact:true}).fill(name);await page.getByLabel('Precio en soles',{exact:true}).fill('25');const resource=await page.getByRole('combobox',{name:'Recurso',exact:true}).locator('option').filter({hasText:'General'}).getAttribute('value');await page.getByRole('combobox',{name:'Recurso',exact:true}).selectOption(resource!);await page.getByRole('button',{name:'Publicar oferta',exact:true}).click();await expect(page.getByRole('status').filter({hasText:'Versión de oferta publicada.'})).toBeVisible();const offer=await page.getByRole('combobox',{name:'Oferta',exact:true}).locator('option').filter({hasText:name}).getAttribute('value');await page.getByRole('combobox',{name:'Oferta',exact:true}).selectOption(offer!);await page.getByLabel('Unidades',{exact:true}).fill('1');await page.getByRole('combobox',{name:'Origen',exact:true}).selectOption('free');await page.getByRole('button',{name:'Registrar pedido demo',exact:true}).click();await expect(page.getByRole('alert')).toContainText('La cortesía requiere motivo');await page.getByLabel('Motivo de cortesía',{exact:true}).fill('Prueba E2E de cortesía');await page.getByRole('button',{name:'Registrar pedido demo',exact:true}).click();await expect(page.getByRole('status').filter({hasText:/Pedido .*Confirmado/})).toBeVisible();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy();await page.screenshot({path:`../../docs/screenshots/f4-staff-${info.project.name}.png`,fullPage:true});
 });
-
-
-
-

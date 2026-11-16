@@ -419,6 +419,13 @@ export function OrderDetail() {
                 <h3>
                   Pase {i + 1} · {t.zone}
                 </h3>
+                <p>
+                  {t.status === "Used"
+                    ? "Ingreso registrado · sin reingreso"
+                    : t.status === "Revoked"
+                      ? "Pase revocado"
+                      : "Sin ingreso registrado"}
+                </p>
                 <QRCodeSVG
                   value={t.token}
                   size={180}
@@ -439,7 +446,8 @@ export function OrderDetail() {
           <h2>Vale de consumo independiente</h2>
           <p>
             Este QR no sirve como entrada. El canje se habilita después de un
-            ingreso; operación de barra en F5.
+            ingreso del pedido. Preséntalo en barra para elegir las cantidades a
+            entregar.
           </p>
           <QRCodeSVG
             value={o.voucher.token}

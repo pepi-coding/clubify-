@@ -1700,10 +1700,303 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/tenants/{tenantId}/venues/{venueId}/events/{eventId}/admissions/operations/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    tenantId: string;
+                    venueId: string;
+                    eventId: string;
+                    key: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ScanOutcome"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tenants/{tenantId}/venues/{venueId}/events/{eventId}/redemptions/operations/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    tenantId: string;
+                    venueId: string;
+                    eventId: string;
+                    key: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ScanOutcome"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tenants/{tenantId}/venues/{venueId}/events/{eventId}/admissions/inspect": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    tenantId: string;
+                    venueId: string;
+                    eventId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["TokenRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ScanOutcome"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tenants/{tenantId}/venues/{venueId}/events/{eventId}/admissions/check-in": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    tenantId: string;
+                    venueId: string;
+                    eventId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["AdmissionRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ScanOutcome"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tenants/{tenantId}/venues/{venueId}/events/{eventId}/redemptions/inspect": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    tenantId: string;
+                    venueId: string;
+                    eventId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["TokenRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ScanOutcome"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tenants/{tenantId}/venues/{venueId}/events/{eventId}/redemptions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    tenantId: string;
+                    venueId: string;
+                    eventId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["RedemptionRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ScanOutcome"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AdmissionRequest: {
+            token: string;
+            /** @default  */
+            station: string;
+        };
         AnonymousTypeOfGuidAndstring: {
             /** Format: uuid */
             id: string;
@@ -1737,6 +2030,17 @@ export interface components {
             totalCents: number;
             /** Format: date-time */
             expiresAt?: null | string;
+        };
+        ConsumptionBalance: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            /** Format: int32 */
+            granted: number;
+            /** Format: int32 */
+            delivered: number;
+            /** Format: int32 */
+            remaining: number;
         };
         ContextResponse: {
             /** Format: uuid */
@@ -2042,6 +2346,14 @@ export interface components {
             whatsAppNumber: string;
             instructions: string;
         };
+        ProblemDetails: {
+            type?: null | string;
+            title?: null | string;
+            /** Format: int32 */
+            status?: null | number;
+            detail?: null | string;
+            instance?: null | string;
+        };
         Product: {
             /** Format: uuid */
             id?: string;
@@ -2052,6 +2364,18 @@ export interface components {
         };
         ProductSave: {
             name: string;
+        };
+        RedemptionRequest: {
+            token: string;
+            lines: components["schemas"]["RedemptionSelection"][];
+            /** @default  */
+            station: string;
+        };
+        RedemptionSelection: {
+            /** Format: uuid */
+            entitlementId: string;
+            /** Format: int32 */
+            quantity: number;
         };
         ReservationDto: {
             /** Format: uuid */
@@ -2079,6 +2403,23 @@ export interface components {
             /** Format: int32 */
             expectedRevision: number;
         };
+        ScanOutcome: {
+            code: string;
+            message: string;
+            /** @default false */
+            canConfirm: boolean;
+            /** Format: uuid */
+            subjectId?: null | string;
+            zone?: null | string;
+            /** Format: int32 */
+            ordinal?: null | number;
+            /** Format: date-time */
+            recordedAt?: null | string;
+            lines?: null | components["schemas"]["ConsumptionBalance"][];
+            state?: null | string;
+            /** Format: uuid */
+            operationId?: null | string;
+        };
         StaffSaleRequest: {
             customerEmail: string;
             lines: components["schemas"]["OfferLineRequest"][];
@@ -2093,6 +2434,9 @@ export interface components {
             ordinal: number;
             zone: string;
             status: string;
+            token: string;
+        };
+        TokenRequest: {
             token: string;
         };
         VenueCreate: {

@@ -35,7 +35,7 @@ public sealed partial class CommerceService(AppDbContext db, IDataProtectionProv
     public static string Hash(string text) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(text)));
     private static void Fail(int status, string code, string message) => throw new CommerceException(status, code, message);
     private static T Scope<T>(T entity, ClubEvent e) where T : EventEntity { entity.TenantId = e.TenantId; entity.VenueId = e.VenueId; entity.EventId = e.Id; return entity; }
-    public async Task<T> Transaction<T>(Guid eventId, Func<ClubEvent, Task<T>> action, string? actor = null, string? operation = null, string? key = null, object? body = null)
+    public async Task<T> Transaction<T>(Guid eventId, Func<ClubEvent, Task<T>> action, string? actor = null, string? operation = null, string? key = null, object? body = null, Guid? expectedTenant = null, Guid? expectedVenue = null)
     {
         if (operation != null && (string.IsNullOrWhiteSpace(key) || key.Length > 100)) Fail(422, "IDEMPOTENCY_REQUIRED", "Idempotency-Key de 1 a 100 caracteres requerido.");
         await using var tx = await db.Database.BeginTransactionAsync();
@@ -45,6 +45,7 @@ public sealed partial class CommerceService(AppDbContext db, IDataProtectionProv
         }
         var e = await db.Events.FromSqlInterpolated($"SELECT * FROM app.\"Events\" WHERE \"Id\" = {eventId} FOR UPDATE").SingleOrDefaultAsync();
         if (e == null || e.Status != "Published") { Fail(404, "EVENT_NOT_FOUND", "Evento publicado no encontrado."); }
+        if ((expectedTenant != null && e!.TenantId != expectedTenant) || (expectedVenue != null && e!.VenueId != expectedVenue)) Fail(404, "EVENT_NOT_FOUND", "Evento no encontrado.");
         var fingerprint = Hash(JsonSerializer.Serialize(body, Json));
         if (operation != null) {
             var prior = await db.Set<IdempotencyRecord>().SingleOrDefaultAsync(x => x.ActorId == actor && x.TenantId == e!.TenantId && x.Operation == operation && x.Key == key);
@@ -184,4 +185,3 @@ public sealed partial class CommerceService(AppDbContext db, IDataProtectionProv
         });
     }
 }
-

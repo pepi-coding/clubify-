@@ -1,9 +1,9 @@
+import { login } from './auth';
 import { test, expect } from '@playwright/test';
 
 test('F2 saves a moved map, publishes an overnight event and preserves its snapshot',async({page})=>{
- const password=process.env.Seed__Passwords__AdminA;if(!password)throw Error('Missing AdminA password');
  const venueName='E2E '+crypto.randomUUID().slice(0,8);
- await page.goto('/login');await page.getByLabel('Correo electrónico').fill('admin.a@demo.local');await page.getByLabel('Contraseña',{exact:true}).fill(password);await page.getByRole('button',{name:'Entrar',exact:true}).click();await expect(page.getByRole('button',{name:'Cerrar sesión'})).toBeVisible();
+ await login(page,'admin.a@demo.local','AdminA');
  await page.locator('summary').filter({hasText:'Crear sede'}).click();await page.getByLabel('Nombre de nueva sede').fill(venueName);await page.getByRole('button',{name:'Crear sede',exact:true}).click();await page.getByRole('link',{name:new RegExp(venueName)}).click();
  await page.getByLabel('Nombre del mapa',{exact:true}).fill('Plano de prueba');await page.getByRole('button',{name:'Crear mapa',exact:true}).click();
  await expect(page.getByRole('heading',{name:'Plano de prueba',exact:true})).toBeVisible();
@@ -22,4 +22,3 @@ test('F2 saves a moved map, publishes an overnight event and preserves its snaps
  await page.goto(eventUrl);await page.getByRole('button',{name:'Ver lista',exact:true}).click();await expect(page.getByLabel('Lista de elementos')).toContainText('Box B3');await expect(page.getByLabel('Lista de elementos')).not.toContainText('Box modificado');
  await page.screenshot({path:`../../docs/screenshots/f2-event-${test.info().project.name}.png`,fullPage:true});
 });
-

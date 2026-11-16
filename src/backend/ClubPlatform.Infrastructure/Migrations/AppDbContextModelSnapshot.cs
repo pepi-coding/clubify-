@@ -23,6 +23,55 @@ namespace ClubPlatform.Infrastructure.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("ClubPlatform.Core.AdmissionLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ActorId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset>("AdmittedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("EventId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("OrderId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Station")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("TicketId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("VenueId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasAlternateKey("TenantId", "VenueId", "EventId", "Id");
+
+                    b.HasIndex("ActorId");
+
+                    b.HasIndex("TicketId")
+                        .IsUnique();
+
+                    b.HasIndex("TenantId", "EventId");
+
+                    b.HasIndex("TenantId", "VenueId", "EventId", "OrderId", "TicketId");
+
+                    b.ToTable("AdmissionLog", "app");
+                });
+
             modelBuilder.Entity("ClubPlatform.Core.AuditEntry", b =>
                 {
                     b.Property<Guid>("Id")
@@ -186,8 +235,6 @@ namespace ClubPlatform.Infrastructure.Migrations
                     b.HasIndex("VoucherId", "ProductId")
                         .IsUnique();
 
-                    b.HasIndex("TenantId", "VenueId", "EventId", "VoucherId");
-
                     b.ToTable("ConsumptionEntitlement", "app", t =>
                         {
                             t.HasCheckConstraint("CK_Entitlement", "\"Granted\" > 0 AND \"Delivered\" >= 0 AND \"Delivered\" <= \"Granted\"");
@@ -210,6 +257,12 @@ namespace ClubPlatform.Infrastructure.Migrations
                     b.Property<Guid>("OrderId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text")
+                        .HasDefaultValue("Granted");
+
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid");
 
@@ -230,9 +283,10 @@ namespace ClubPlatform.Infrastructure.Migrations
 
                     b.HasIndex("TenantId", "EventId");
 
-                    b.HasIndex("TenantId", "VenueId", "EventId", "OrderId");
-
-                    b.ToTable("ConsumptionVoucher", "app");
+                    b.ToTable("ConsumptionVoucher", "app", t =>
+                        {
+                            t.HasCheckConstraint("CK_Voucher_State", "\"Status\" IN ('Granted','PartiallyRedeemed','Redeemed','Revoked')");
+                        });
                 });
 
             modelBuilder.Entity("ClubPlatform.Core.EventInventory", b =>
@@ -918,6 +972,148 @@ namespace ClubPlatform.Infrastructure.Migrations
                     b.ToTable("Product", "app");
                 });
 
+            modelBuilder.Entity("ClubPlatform.Core.RedemptionLine", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("EntitlementId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("EventId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("OperationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("VenueId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("VoucherId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasAlternateKey("TenantId", "VenueId", "EventId", "Id");
+
+                    b.HasIndex("OperationId", "EntitlementId")
+                        .IsUnique();
+
+                    b.HasIndex("TenantId", "EventId");
+
+                    b.HasIndex("TenantId", "VenueId", "EventId", "VoucherId", "EntitlementId");
+
+                    b.HasIndex("TenantId", "VenueId", "EventId", "VoucherId", "OperationId");
+
+                    b.ToTable("RedemptionLine", "app", t =>
+                        {
+                            t.HasCheckConstraint("CK_RedemptionLine_Quantity", "\"Quantity\" > 0");
+                        });
+                });
+
+            modelBuilder.Entity("ClubPlatform.Core.RedemptionOperation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ActorId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("EventId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("OrderId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Station")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("VenueId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("VoucherId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasAlternateKey("TenantId", "VenueId", "EventId", "Id");
+
+                    b.HasIndex("ActorId");
+
+                    b.HasIndex("TenantId", "EventId");
+
+                    b.HasIndex("TenantId", "VenueId", "EventId", "OrderId", "VoucherId");
+
+                    b.ToTable("RedemptionOperation", "app");
+                });
+
+            modelBuilder.Entity("ClubPlatform.Core.ScanAttempt", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ActorId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Channel")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("EventId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Outcome")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Phase")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("SubjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("VenueId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasAlternateKey("TenantId", "VenueId", "EventId", "Id");
+
+                    b.HasIndex("ActorId");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("TenantId", "EventId");
+
+                    b.ToTable("ScanAttempt", "app");
+                });
+
             modelBuilder.Entity("ClubPlatform.Core.Tenant", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1011,11 +1207,12 @@ namespace ClubPlatform.Infrastructure.Migrations
                     b.HasIndex("OrderId", "OrderLineId", "Ordinal")
                         .IsUnique();
 
-                    b.HasIndex("TenantId", "VenueId", "EventId", "OrderId");
-
                     b.HasIndex("TenantId", "VenueId", "EventId", "OrderLineId");
 
-                    b.ToTable("Ticket", "app");
+                    b.ToTable("Ticket", "app", t =>
+                        {
+                            t.HasCheckConstraint("CK_Ticket_State", "\"Status\" IN ('Issued','Used','Revoked')");
+                        });
                 });
 
             modelBuilder.Entity("ClubPlatform.Core.Venue", b =>
@@ -1327,6 +1524,29 @@ namespace ClubPlatform.Infrastructure.Migrations
                     b.ToTable("AspNetUserTokens", "app");
                 });
 
+            modelBuilder.Entity("ClubPlatform.Core.AdmissionLog", b =>
+                {
+                    b.HasOne("ClubPlatform.Infrastructure.AppUser", null)
+                        .WithMany()
+                        .HasForeignKey("ActorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ClubPlatform.Core.ClubEvent", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId", "VenueId", "EventId")
+                        .HasPrincipalKey("TenantId", "VenueId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ClubPlatform.Core.Ticket", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId", "VenueId", "EventId", "OrderId", "TicketId")
+                        .HasPrincipalKey("TenantId", "VenueId", "EventId", "OrderId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("ClubPlatform.Core.AuditEntry", b =>
                 {
                     b.HasOne("ClubPlatform.Core.ClubEvent", null)
@@ -1626,6 +1846,69 @@ namespace ClubPlatform.Infrastructure.Migrations
                     b.HasOne("ClubPlatform.Core.Tenant", null)
                         .WithMany()
                         .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ClubPlatform.Core.RedemptionLine", b =>
+                {
+                    b.HasOne("ClubPlatform.Core.ClubEvent", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId", "VenueId", "EventId")
+                        .HasPrincipalKey("TenantId", "VenueId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ClubPlatform.Core.ConsumptionEntitlement", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId", "VenueId", "EventId", "VoucherId", "EntitlementId")
+                        .HasPrincipalKey("TenantId", "VenueId", "EventId", "VoucherId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ClubPlatform.Core.RedemptionOperation", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId", "VenueId", "EventId", "VoucherId", "OperationId")
+                        .HasPrincipalKey("TenantId", "VenueId", "EventId", "VoucherId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ClubPlatform.Core.RedemptionOperation", b =>
+                {
+                    b.HasOne("ClubPlatform.Infrastructure.AppUser", null)
+                        .WithMany()
+                        .HasForeignKey("ActorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ClubPlatform.Core.ClubEvent", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId", "VenueId", "EventId")
+                        .HasPrincipalKey("TenantId", "VenueId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ClubPlatform.Core.ConsumptionVoucher", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId", "VenueId", "EventId", "OrderId", "VoucherId")
+                        .HasPrincipalKey("TenantId", "VenueId", "EventId", "OrderId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ClubPlatform.Core.ScanAttempt", b =>
+                {
+                    b.HasOne("ClubPlatform.Infrastructure.AppUser", null)
+                        .WithMany()
+                        .HasForeignKey("ActorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ClubPlatform.Core.ClubEvent", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId", "VenueId", "EventId")
+                        .HasPrincipalKey("TenantId", "VenueId", "Id")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });

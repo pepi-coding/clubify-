@@ -1,6 +1,8 @@
-# Arquitectura y decisiones F0–F4
+# Arquitectura y decisiones F0–F5
 
 Fecha: 14/11/2026. Alcance autorizado acumulado: F0–F4. Decisiones de inventario, pagos y emisión: [f3-f4.md](f3-f4.md).
+
+F5 añadida el 16/11/2026: admisiones de un uso, canje parcial posterior a ingreso, paneles separados Security/BarStaff, cámara con fallback manual, logs/auditoría e idempotencia con recuperación del propio operador. Bloqueos y relaciones compuestas sobre PostgreSQL; no se confirma una acción por leer QR ni por tener conectividad local. Detalles: [f5.md](f5.md).
 
 Cambio posterior del MVP: nuevas reservas por WhatsApp con una hora de vigencia y verificación humana de Yape/Plin por Promotor de sede. Reutiliza transacciones de inventario/emisión e introduce configuración de WhatsApp por sede, datos auditados de verificación y unicidad del código de operación. Ver [whatsapp-payments.md](whatsapp-payments.md), que sustituye las reglas anteriores del checkout online.
 

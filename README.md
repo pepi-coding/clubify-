@@ -1,6 +1,6 @@
 # ClubPlatform
 
-Implementación de F0–F4 de `contract.md`. React/TypeScript + ASP.NET Core Identity + PostgreSQL real. Interfaz en español, zona horaria America/Lima. Incluye sedes, mapas, eventos, ofertas versionadas, reservas, venta demo, pases QR y vales de consumo.
+Implementación de F0–F5 de `contract.md`. React/TypeScript + ASP.NET Core Identity + PostgreSQL real. Interfaz en español, zona horaria America/Lima. Incluye sedes, mapas, eventos, ofertas, reservas por WhatsApp, verificación de pagos, QR, ingreso único y canje parcial de consumos.
 
 **Flujo actual del MVP:** reserva de **60 minutos** → apertura de **WhatsApp** → pago por **Yape/Plin** y captura enviada al negocio → verificación por **Promotor** → reserva confirmada y QR emitidos. Antes de recibir reservas, AdminA configura el número en Miraflores → **Reservas y pagos por WhatsApp → Configurar WhatsApp de pagos**. No se ha inventado un número de contacto. Reglas y pagos vencidos: [docs/whatsapp-payments.md](docs/whatsapp-payments.md).
 
@@ -10,11 +10,20 @@ Implementación de F0–F4 de `contract.md`. React/TypeScript + ASP.NET Core Ide
 ./scripts/docker-demo.ps1
 ```
 
-Abrir [la demo local](http://localhost:5081). El contenedor `clubplatform-f4-preview` sirve frontend y API; `infra-db-1` sirve PostgreSQL. El script compila, aplica migraciones como tarea separada y conserva la DB y las claves persistentes. Sustituye la preview F2 en ese puerto y deja su contenedor detenido. `-SkipBuild` reutiliza la imagen y `-Port 5082` cambia el puerto.
+Abrir [la demo local](http://localhost:5081). El contenedor `clubplatform-f5-preview` sirve frontend y API; `infra-db-1` sirve PostgreSQL. El script compila, aplica migraciones como tarea separada y conserva la DB y las claves persistentes. Sustituye las previews F2/F4 en ese puerto y deja sus contenedores detenidos. `-SkipBuild` reutiliza la imagen y `-Port 5082` cambia el puerto.
 
 Iniciar como Customer, abrir **Noche demo · Boxes y entradas** y reservar B3 por S/ 1,000. WhatsApp abre con referencia, importe y límite; enviar allí la captura. Como `promoter@demo.local`, abrir Miraflores → **Reservas y pagos por WhatsApp**, seleccionar evento y verificar abono. **Mis pedidos** muestra diez QR individuales y un vale de whisky ×1/gaseosa ×2 después de confirmar. Contraseña del promotor: `Seed__Passwords__Promoter` en `.local/settings.json`. AdminA también puede verificar y gestionar ofertas/cortesías.
 
-El flujo online usa verificación humana de Yape/Plin; no hay pasarela ni comprobación automática del abono. El modo Demo previo se conserva para pruebas y no puede autoaprobar reservas WhatsApp. Ingreso y canje corresponden a F5. Reglas originales F3/F4: [docs/f3-f4.md](docs/f3-f4.md); cambios actuales: [docs/whatsapp-payments.md](docs/whatsapp-payments.md).
+El flujo online usa verificación humana de Yape/Plin; no hay pasarela ni comprobación automática del abono. El modo Demo previo se conserva para pruebas y no puede autoaprobar reservas WhatsApp. Reglas originales F3/F4: [docs/f3-f4.md](docs/f3-f4.md); cambios actuales: [docs/whatsapp-payments.md](docs/whatsapp-payments.md).
+
+## F5: seguridad y barra
+
+1. Publicar un evento con ventanas de ingreso/canje vigentes y completar una compra con verificación del promotor. El evento seed de enero de 2027 conserva sus fechas; no autoriza ingresos fuera de su horario.
+2. Entrar como `security@demo.local`, abrir Miraflores, seleccionar **Evento de operación** y leer un pase con cámara o pegar su código. **Consultar código** no admite todavía. Pulsar **Confirmar ingreso**; un segundo ingreso se rechaza con hora del primero.
+3. Entrar como `bar@demo.local`, seleccionar el mismo evento y consultar el vale de consumo. Requiere al menos un pase del pedido ingresado. Elegir, por ejemplo, una gaseosa y **Confirmar entrega seleccionada**: quedan whisky ×1/gaseosa ×1.
+4. Si se pierde una respuesta, usar **Reintentar misma confirmación** o **Consultar resultado**. Tras recargar, seleccionar el evento recupera la operación registrada. Sin confirmación del servidor no aparece aprobación; no hay operación offline.
+
+Cámara mediante HTTPS o localhost, con fallback de código manual y feedback escrito/sonoro. Contraseñas privadas en `.local/settings.json` (`Seed__Passwords__Security`, `Seed__Passwords__Bar`). Solo esos roles asignados pueden operar; admin/promotor no reciben permisos de escaneo implícitos. No hay reingreso ni contador de ocupación actual. Detalles y API: [docs/f5.md](docs/f5.md).
 
 ## Requisitos
 
@@ -62,7 +71,7 @@ Consultar las contraseñas privadas en `.local/settings.json` (`Seed__Passwords_
 | Cashier | cashier@demo.local | Caja demo, A/Miraflores |
 | Promoter | promoter@demo.local | Verificación manual, A/Miraflores |
 
-No existe selector que sustituya el login. Los administradores gestionan sedes, mapas, eventos, ofertas y cortesías. El promotor verifica abonos de Yape/Plin en su sede. Caja demo permanece disponible solo con el proveedor Demo de pruebas. Seguridad/barra consultan eventos de su sede asignada; sus escáneres se implementan en F5. Clientes autenticados reservan por WhatsApp y consultan sus propios pedidos.
+No existe selector que sustituya el login. Los administradores gestionan sedes, mapas, eventos, ofertas y cortesías. El promotor verifica abonos de Yape/Plin en su sede. Caja demo permanece disponible solo con el proveedor Demo de pruebas. Seguridad registra ingresos y barra entregas parciales en su sede asignada. Clientes autenticados reservan por WhatsApp y consultan sus propios pedidos y saldos.
 
 ## Comprobaciones
 
@@ -90,7 +99,7 @@ npx playwright install chromium
 npm test
 ```
 
-Los doce escenarios combinan escritorio y móvil: identidad/permisos, flujo completo de mapa/evento, reserva WhatsApp, rechazo/corrección y verificación del promotor, diez QR y vale, publicación de oferta y cortesía. Las 31 pruebas backend incluyen configuración/plazo de una hora, permisos del promotor, comprobantes reutilizados, concurrencia, aforo, idempotencia, expiración, pagos repetidos/tardíos, snapshots, cifrado y regresiones F0–F4.
+Los 16 escenarios combinan escritorio y móvil: identidad/mapas, WhatsApp/promotor, QR/vale, ofertas/cortesías y F5 (decoder real con video sintético, cámara denegada, fallback, offline y respuesta perdida tras commit). Los logins de prueba esperan el límite real de 20/minuto; la suite puede tardar más de un minuto. Las 38 pruebas backend PostgreSQL cubren F0–F5, con concurrencia, permisos, ventanas/revocación, idempotencia, saldos parciales, pago manual, comprobantes, aforo, snapshots y cifrado.
 
 ## Migraciones y Docker
 
@@ -98,7 +107,7 @@ Los doce escenarios combinan escritorio y móvil: identidad/permisos, flujo comp
 . ./scripts/dev-env.ps1
 dotnet tool restore
 dotnet run --project src/backend/ClubPlatform.Api -- --migrate
-docker build -f infra/Dockerfile -t clubplatform:f4 .
+docker build -f infra/Dockerfile -t clubplatform:f5 .
 ```
 
 Las migraciones son un comando explícito, no se ejecutan automáticamente al servir solicitudes. El Dockerfile multietapa entrega React y API desde el mismo origen, como usuario no root en puerto 8080. Para ejecutarlo configurar `ConnectionStrings__Database` y `DataProtection__Path` y montar ahí almacenamiento persistente accesible por el usuario 1654. Production exige HTTPS en el proxy; cookies Secure siempre fuera de Development. El proveedor de pagos predeterminado es Disabled; Demo y el seed de prueba provocan fallo de inicio en Production. No se ha desplegado ningún servicio externo ni configurado Supabase.

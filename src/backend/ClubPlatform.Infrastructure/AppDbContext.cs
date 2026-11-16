@@ -19,7 +19,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
     public DbSet<EventResource> EventResources => Set<EventResource>();
     protected override void OnModelCreating(ModelBuilder b)
     {
-        base.OnModelCreating(b); b.HasDefaultSchema("app"); PlanningModel.Configure(b); CommerceModel.Configure(b);
+        base.OnModelCreating(b); b.HasDefaultSchema("app"); PlanningModel.Configure(b); CommerceModel.Configure(b); OperationsModel.Configure(b);
         b.Entity<Tenant>().Property(x => x.Name).HasMaxLength(160);
         b.Entity<Venue>().HasAlternateKey(x => new { x.TenantId, x.Id });
         b.Entity<Venue>().HasOne<Tenant>().WithMany().HasForeignKey(x => x.TenantId).OnDelete(DeleteBehavior.Restrict);
@@ -36,7 +36,3 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
         b.Entity<WebSession>().ToTable(t => t.HasCheckConstraint("CK_Session_Context", "(\"TenantId\" IS NULL AND \"VenueId\" IS NULL) OR (\"TenantId\" IS NOT NULL AND \"VenueId\" IS NOT NULL)"));
     }
 }
-
-
-
-

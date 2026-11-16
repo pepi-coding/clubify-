@@ -27,6 +27,8 @@ builder.Services.ConfigureApplicationCookie(o => { o.Cookie.Name = "club.session
 builder.Services.AddAntiforgery(o => { o.HeaderName = "X-CSRF-TOKEN"; o.Cookie.HttpOnly = true; o.Cookie.SameSite = SameSiteMode.Strict; o.Cookie.SecurePolicy = local ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.Always; });
 builder.Services.AddAuthorization(o =>
 {
+    o.AddPolicy("Admission", p => p.RequireAuthenticatedUser().AddRequirements(new ScopeRequirement([StaffRoles.Security])));
+    o.AddPolicy("Redemption", p => p.RequireAuthenticatedUser().AddRequirements(new ScopeRequirement([StaffRoles.BarStaff])));
     o.AddPolicy("TenantAdmin", p => p.RequireAuthenticatedUser().AddRequirements(new ScopeRequirement([StaffRoles.TenantAdmin])));
     o.AddPolicy("PaymentVerifier", p => p.RequireAuthenticatedUser().AddRequirements(new ScopeRequirement([StaffRoles.TenantAdmin, StaffRoles.VenueManager, StaffRoles.Promoter])));
     o.AddPolicy("Sales", p => p.RequireAuthenticatedUser().AddRequirements(new ScopeRequirement([StaffRoles.TenantAdmin, StaffRoles.VenueManager, StaffRoles.Cashier])));
@@ -36,7 +38,7 @@ builder.Services.AddAuthorization(o =>
 });
 builder.Services.AddScoped<IAuthorizationHandler, ScopeHandler>();
 builder.Services.AddSingleton<Microsoft.AspNetCore.Authorization.IAuthorizationMiddlewareResultHandler, ScopeResultHandler>();
-builder.Services.AddRateLimiter(o => { o.RejectionStatusCode = 429; o.AddPolicy("commerce", ctx => RateLimitPartition.GetFixedWindowLimiter(ctx.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown", _ => new FixedWindowRateLimiterOptions { PermitLimit = 120, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 })); o.AddPolicy("login", ctx => RateLimitPartition.GetFixedWindowLimiter(ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown", _ => new FixedWindowRateLimiterOptions { PermitLimit = 20, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 })); });
+builder.Services.AddRateLimiter(o => { o.RejectionStatusCode = 429; o.AddPolicy("operations", ctx => RateLimitPartition.GetFixedWindowLimiter(ctx.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown", _ => new FixedWindowRateLimiterOptions { PermitLimit = 180, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 })); o.AddPolicy("commerce", ctx => RateLimitPartition.GetFixedWindowLimiter(ctx.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown", _ => new FixedWindowRateLimiterOptions { PermitLimit = 120, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 })); o.AddPolicy("login", ctx => RateLimitPartition.GetFixedWindowLimiter(ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown", _ => new FixedWindowRateLimiterOptions { PermitLimit = 20, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 })); });
 builder.Services.ConfigureHttpJsonOptions(o => o.SerializerOptions.NumberHandling = System.Text.Json.Serialization.JsonNumberHandling.Strict);
 builder.Services.AddProblemDetails(); builder.Services.AddOpenApi();
 var app = builder.Build();
@@ -81,7 +83,7 @@ api.MapGet("/tenants/{tenantId:guid}/venues/{venueId:guid}", async (Guid tenantI
 
 api.MapGet("/platform/tenants", async (AppDbContext db) => await db.Tenants.Select(x => new { x.Id, x.Name }).ToListAsync()).RequireAuthorization("Platform");
 app.MapPlanning();
-app.MapCommerce(); app.MapManualPayments();
+app.MapCommerce(); app.MapManualPayments(); app.MapOperations();
 app.MapFallback("/api/{**path}", () => Results.Problem(statusCode: 404, title: "Ruta no encontrada"));
 app.UseDefaultFiles(); app.UseStaticFiles();
 app.MapFallbackToFile("index.html");
@@ -99,10 +101,3 @@ public record MembershipResponse(Guid TenantId, string Name, string Role);
 public record VenueSummary(Guid Id, Guid TenantId, string Name);
 public record ContextResponse(Guid? TenantId, Guid? VenueId);
 public record MeResponse(string Email, bool IsPlatformAdmin, List<MembershipResponse> Memberships, List<VenueSummary> Venues, ContextResponse Context);
-
-
-
-
-
-
-

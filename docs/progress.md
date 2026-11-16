@@ -1,6 +1,6 @@
 # Progreso de implementación
 
-Actualizado: 14/11/2026 (America/Lima).
+Actualizado: 16/11/2026 (America/Lima).
 
 | Fase | Estado |
 |---|---|
@@ -9,7 +9,30 @@ Actualizado: 14/11/2026 (America/Lima).
 | F2 — Sedes, mapas y eventos | completada |
 | F3 — Ofertas, disponibilidad y holds | completada |
 | F4 — Venta demo y emisión | completada |
-| F5–F9 | pendiente |
+| F5 — Seguridad y barra | completada |
+| F6–F9 | pendiente |
+
+## F5 — Ingreso y canje operativos
+
+Seguridad y barra disponen de paneles separados por rol y sede, selección de evento, cámara QR y alternativa de código pegado/escrito. Leer solo inspecciona; confirmar vuelve a validar permisos, estado y ventanas. Seguridad registra un único ingreso y muestra usados con fecha/hora. Barra exige un ingreso del pedido y entrega únicamente las líneas/cantidades elegidas. Whisky ×1/gaseosa ×2, tras entregar una gaseosa: whisky ×1/gaseosa ×1. No hay reingreso ni ocupación actual.
+
+Transacciones PostgreSQL reutilizan el bloqueo de evento/inventarios y bloquean ticket/vale y líneas ordenadas. Registro de ingreso/entrega, saldo, auditoría e idempotencia se confirman juntos. Unicidad por ticket y FKs compuestas impiden duplicación o vincular otra orden/vale. Reintentar misma clave/cuerpo devuelve el resultado original; clave con otros datos da 409. Se valida la sede del evento antes de recuperar una respuesta idempotente.
+
+La UI distingue consulta pendiente de confirmación, éxito confirmado y rechazo/error; feedback escrito, visual y sonoro. Cámara solicita solo video y se detiene después de leer/salir. Timeout 10 s y diario de operación (clave/hash/estación, sin QR) permiten recuperar una respuesta perdida, incluso tras recargar. Recuperación autenticada y limitada al propio operador. Desconexión nunca aprueba una acción nueva.
+
+Migración `20261116112009_AdmissionsAndRedemptions` aplicada sobre la DB existente y bases PostgreSQL vacías de pruebas. Nuevas tablas AdmissionLog, RedemptionOperation/Line y ScanAttempt; estados y restricciones, sin cascadas comerciales. Pedidos, claves, configuración WhatsApp y QR previos preservados.
+
+Verificado:
+
+- Build backend y frontend aprobados, contrato TS regenerado. Decoder QR se carga solo al abrir cámara; sin advertencia de bundle grande. ZXing fijado a versiones compatibles con Node 22, npm audit sin vulnerabilidades conocidas.
+- 38/38 pruebas backend sobre PostgreSQL real: siete F5 nuevas, regresión F0–F4. Incluyen dos empleados por pase/última botella, saldo parcial, reintentos, permisos/CSRF, recuperación por actor, sede/evento/tipo incorrectos, cambio de ventana/revocación antes de confirmar, selección inválida y FK entre vales.
+- 16/16 Playwright contra Docker, escritorio/móvil: decoder real con un QR emitido y stream de video sintético, cámara denegada y entrada manual, inspección offline sin aprobación, respuesta perdida después de commit, reintento de ingreso y recuperación de canje tras recargar, sin doble efecto. Se conservan escenarios de WhatsApp, promotor, cortesías, identidad y mapas. El helper de login respeta y espera el límite real de 20/minuto; no se debilitó el servidor.
+- Capturas f5-security-{chromium,mobile}.png y f5-bar-{chromium,mobile}.png revisadas sin desbordamiento a 390px. Se ignoran en Git por contener datos operativos de prueba.
+- Reinicio real de clubplatform-f5-preview: sesiones de cliente/seguridad/barra, timestamp de admisión, pase Used, saldo parcial y credenciales QR recuperados sin cambios. Script reproducible tests/e2e/restart-operations.mjs; archivos de comparación privados en .local.
+
+Ejecución actual: `./scripts/docker-demo.ps1`, imagen clubplatform:f5 y http://localhost:5081. Se conservan las previews anteriores detenidas y los volúmenes existentes. Usar security@demo.local y bar@demo.local, contraseñas privadas en .local/settings.json. El evento debe tener ventanas vigentes: el seed original de enero de 2027 no permite ingresar antes de esa fecha.
+
+Reglas, API y guion: [f5.md](f5.md). La cámara necesita HTTPS o localhost; no se declara una validación física de todos los teléfonos/redes del local. No hay modo offline ni anulaciones comerciales. Reportes, despliegue y cierre integral de demo corresponden a F6, no iniciada. El video Remotion anterior es un artefacto histórico de F4, donde F5 aparecía como vista previa.
 
 ## Ajuste MVP — WhatsApp, Yape/Plin y Promotor
 
